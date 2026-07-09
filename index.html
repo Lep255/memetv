@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VidNest Loader</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: #07080d;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    body { padding: 16px; }
+
+    .app {
+      width: min(1320px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 370px;
+      gap: 14px;
+      min-height: calc(100vh - 32px);
+    }
+
+    .panel {
+      background: #151722;
+      border: 1px solid #2b2f40;
+      border-radius: 22px;
+      overflow: hidden;
+    }
+
+    .player {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .header {
+      padding: 18px 20px;
+      border-bottom: 1px solid #2b2f40;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(30px, 4vw, 46px);
+    }
+
+    .meta {
+      color: #bfc5d8;
+      font-weight: bold;
+    }
+
+    .iframe-wrap {
+      position: relative;
+      flex: 1;
+      min-height: 520px;
+      background: black;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      min-height: 520px;
+      border: 0;
+      background: black;
+    }
+
+    .empty {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 24px;
+      color: #c8cce0;
+      font-size: clamp(22px, 3vw, 34px);
+      background: radial-gradient(circle, #191c29, #05060a);
+    }
+
+    .empty.hidden { display: none; }
+
+    .side { padding: 18px; }
+
+    .side h2 {
+      margin: 0 0 14px;
+      color: #b7f7ff;
+      font-size: 30px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .tab-btn {
+      margin: 0;
+      padding: 12px 8px;
+      border-radius: 14px;
+      font-size: 16px;
+      background: #292d3d;
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, #16bfff, #715cff);
+    }
+
+    label {
+      display: block;
+      margin: 14px 0 7px;
+      font-weight: bold;
+      color: #d9dcef;
+    }
+
+    input, select, button {
+      width: 100%;
+      border: 1px solid #34394c;
+      border-radius: 14px;
+      padding: 14px;
+      background: #202332;
+      color: white;
+      font-size: 20px;
+      outline: none;
+    }
+
+    input:focus, select:focus, button:focus {
+      box-shadow: 0 0 0 4px rgba(0, 234, 255, .25);
+    }
+
+    button {
+      margin-top: 16px;
+      border: 0;
+      cursor: pointer;
+      font-weight: bold;
+      background: linear-gradient(135deg, #16bfff, #715cff);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .small {
+      background: #292d3d;
+      font-size: 17px;
+      padding: 12px;
+    }
+
+    .form-section { display: none; }
+    .form-section.active { display: block; }
+
+    .hint {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 14px;
+      background: #202332;
+      color: #c8cce0;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    @media (max-width: 900px) {
+      body { padding: 10px; }
+      .app { grid-template-columns: 1fr; }
+      .iframe-wrap, iframe { min-height: 62vh; }
+      .tabs { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <section class="player panel">
+      <div class="header">
+        <h1 id="title">Anime Loader</h1>
+        <div id="meta" class="meta">Pick a type, enter IDs, then press Load.</div>
+      </div>
+
+      <div class="iframe-wrap">
+        <iframe id="player" title="Video Player" allowfullscreen referrerpolicy="no-referrer"></iframe>
+        <div id="empty" class="empty">Nothing loaded yet.</div>
+      </div>
+    </section>
+
+    <aside class="side panel">
+      <h2>Load</h2>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-mode="anime">Anime</button>
+        <button class="tab-btn" data-mode="animepahe">AnimePahe</button>
+        <button class="tab-btn" data-mode="movie">Movie</button>
+        <button class="tab-btn" data-mode="tv">TV Show</button>
+      </div>
+
+      <section id="animeForm" class="form-section active">
+        <label for="animeId">Anime ID</label>
+        <input id="animeId" type="text" inputmode="numeric" placeholder="Anime ID">
+
+        <label for="animeEpisode">Episode Number</label>
+        <input id="animeEpisode" type="text" inputmode="numeric" placeholder="Episode">
+
+        <label for="animeType">Sub / Dub</label>
+        <select id="animeType">
+          <option value="sub">Sub</option>
+          <option value="dub">Dub</option>
+          <option value="hindi">Hindi</option>
+        </select>
+      </section>
+
+      <section id="animepaheForm" class="form-section">
+        <label for="animepaheId">AnimePahe Anime ID</label>
+        <input id="animepaheId" type="text" inputmode="numeric" placeholder="AnimePahe Anime ID">
+
+        <label for="animepaheEpisode">Episode Number</label>
+        <input id="animepaheEpisode" type="text" inputmode="numeric" placeholder="Episode">
+
+        <label for="animepaheType">Sub / Dub</label>
+        <select id="animepaheType">
+          <option value="sub">Sub</option>
+          <option value="dub">Dub</option>
+          <option value="hindi">Hindi</option>
+        </select>
+      </section>
+
+      <section id="movieForm" class="form-section">
+        <label for="movieId">Movie ID</label>
+        <input id="movieId" type="text" inputmode="numeric" placeholder="Movie ID">
+      </section>
+
+      <section id="tvForm" class="form-section">
+        <label for="tvId">TV Show ID</label>
+        <input id="tvId" type="text" inputmode="numeric" placeholder="TV Show ID">
+
+        <label for="tvSeason">Season</label>
+        <input id="tvSeason" type="text" inputmode="numeric" placeholder="Season">
+
+        <label for="tvEpisode">Episode</label>
+        <input id="tvEpisode" type="text" inputmode="numeric" placeholder="Episode">
+      </section>
+
+      <button id="loadBtn">Load Anime</button>
+
+      <div class="row">
+        <button id="prevBtn" class="small">Previous</button>
+        <button id="nextBtn" class="small">Next</button>
+      </div>
+
+      <div class="hint">No default IDs are loaded. The player only loads after you press Load.</div>
+    </aside>
+  </main>
+
+<script>
+(() => {
+  const player = document.getElementById("player");
+  const empty = document.getElementById("empty");
+  const title = document.getElementById("title");
+  const meta = document.getElementById("meta");
+  const loadBtn = document.getElementById("loadBtn");
+  const prevBtn = document.getElementById("prevBtn");
+  const nextBtn = document.getElementById("nextBtn");
+
+  const animeId = document.getElementById("animeId");
+  const animeEpisode = document.getElementById("animeEpisode");
+  const animeType = document.getElementById("animeType");
+
+  const animepaheId = document.getElementById("animepaheId");
+  const animepaheEpisode = document.getElementById("animepaheEpisode");
+  const animepaheType = document.getElementById("animepaheType");
+
+  const movieId = document.getElementById("movieId");
+
+  const tvId = document.getElementById("tvId");
+  const tvSeason = document.getElementById("tvSeason");
+  const tvEpisode = document.getElementById("tvEpisode");
+
+  let mode = "anime";
+
+  function cleanNum(value) {
+    return String(value || "").replace(/[^\d]/g, "");
+  }
+
+  function requireValue(input, label) {
+    const value = cleanNum(input.value);
+    input.value = value;
+
+    if (!value) {
+      alert(`Please enter ${label}.`);
+      input.focus();
+      return "";
+    }
+
+    return value;
+  }
+
+  function buildUrl() {
+    if (mode === "anime") {
+      const id = requireValue(animeId, "Anime ID");
+      if (!id) return "";
+      const ep = requireValue(animeEpisode, "Episode Number");
+      if (!ep) return "";
+      const lang = animeType.value || "sub";
+      return `https://vidnest.fun/anime/${id}/${ep}/${lang}`;
+    }
+
+    if (mode === "animepahe") {
+      const id = requireValue(animepaheId, "AnimePahe Anime ID");
+      if (!id) return "";
+      const ep = requireValue(animepaheEpisode, "Episode Number");
+      if (!ep) return "";
+      const lang = animepaheType.value || "sub";
+      return `https://vidnest.fun/animepahe/${id}/${ep}/${lang}`;
+    }
+
+    if (mode === "movie") {
+      const id = requireValue(movieId, "Movie ID");
+      if (!id) return "";
+      return `https://vidnest.fun/movie/${id}`;
+    }
+
+    const id = requireValue(tvId, "TV Show ID");
+    if (!id) return "";
+    const season = requireValue(tvSeason, "Season");
+    if (!season) return "";
+    const ep = requireValue(tvEpisode, "Episode");
+    if (!ep) return "";
+    return `https://vidnest.fun/tv/${id}/${season}/${ep}`;
+  }
+
+  function saveValues() {
+    localStorage.setItem("lastMode", mode);
+
+    localStorage.setItem("lastAnimeId", animeId.value);
+    localStorage.setItem("lastAnimeEpisode", animeEpisode.value);
+    localStorage.setItem("lastAnimeType", animeType.value);
+
+    localStorage.setItem("lastAnimepaheId", animepaheId.value);
+    localStorage.setItem("lastAnimepaheEpisode", animepaheEpisode.value);
+    localStorage.setItem("lastAnimepaheType", animepaheType.value);
+
+    localStorage.setItem("lastMovieId", movieId.value);
+
+    localStorage.setItem("lastTvId", tvId.value);
+    localStorage.setItem("lastTvSeason", tvSeason.value);
+    localStorage.setItem("lastTvEpisode", tvEpisode.value);
+  }
+
+  function loadSavedValues() {
+    mode = localStorage.getItem("lastMode") || "anime";
+
+    animeId.value = localStorage.getItem("lastAnimeId") || "";
+    animeEpisode.value = localStorage.getItem("lastAnimeEpisode") || "";
+    animeType.value = localStorage.getItem("lastAnimeType") || "sub";
+
+    animepaheId.value = localStorage.getItem("lastAnimepaheId") || "";
+    animepaheEpisode.value = localStorage.getItem("lastAnimepaheEpisode") || "";
+    animepaheType.value = localStorage.getItem("lastAnimepaheType") || "sub";
+
+    movieId.value = localStorage.getItem("lastMovieId") || "";
+
+    tvId.value = localStorage.getItem("lastTvId") || "";
+    tvSeason.value = localStorage.getItem("lastTvSeason") || "";
+    tvEpisode.value = localStorage.getItem("lastTvEpisode") || "";
+  }
+
+  function setMode(nextMode) {
+    mode = nextMode;
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.mode === mode);
+    });
+
+    document.querySelectorAll(".form-section").forEach(section => section.classList.remove("active"));
+    document.getElementById(`${mode}Form`).classList.add("active");
+
+    if (mode === "anime") {
+      title.textContent = "Anime Loader";
+      loadBtn.textContent = "Load Anime";
+      prevBtn.style.display = "";
+      nextBtn.style.display = "";
+      meta.textContent = "Anime mode.";
+    } else if (mode === "animepahe") {
+      title.textContent = "AnimePahe Loader";
+      loadBtn.textContent = "Load AnimePahe";
+      prevBtn.style.display = "";
+      nextBtn.style.display = "";
+      meta.textContent = "AnimePahe mode.";
+    } else if (mode === "movie") {
+      title.textContent = "Movie Loader";
+      loadBtn.textContent = "Load Movie";
+      prevBtn.style.display = "none";
+      nextBtn.style.display = "none";
+      meta.textContent = "Movie mode.";
+    } else {
+      title.textContent = "TV Show Loader";
+      loadBtn.textContent = "Load TV Episode";
+      prevBtn.style.display = "";
+      nextBtn.style.display = "";
+      meta.textContent = "TV show mode.";
+    }
+
+    localStorage.setItem("lastMode", mode);
+  }
+
+  function loadMedia() {
+    const url = buildUrl();
+    if (!url) return;
+
+    player.src = url;
+    empty.classList.add("hidden");
+
+    if (mode === "anime") {
+      meta.textContent = `Anime ID ${animeId.value} • Episode ${animeEpisode.value} • ${animeType.value.toUpperCase()}`;
+    } else if (mode === "animepahe") {
+      meta.textContent = `AnimePahe ID ${animepaheId.value} • Episode ${animepaheEpisode.value} • ${animepaheType.value.toUpperCase()}`;
+    } else if (mode === "movie") {
+      meta.textContent = `Movie ID ${movieId.value}`;
+    } else {
+      meta.textContent = `TV ID ${tvId.value} • Season ${tvSeason.value} • Episode ${tvEpisode.value}`;
+    }
+
+    saveValues();
+  }
+
+  function changeEpisode(amount) {
+    if (mode === "anime") {
+      const current = Number(cleanNum(animeEpisode.value) || "1");
+      animeEpisode.value = String(Math.max(1, current + amount));
+      loadMedia();
+      return;
+    }
+
+    if (mode === "animepahe") {
+      const current = Number(cleanNum(animepaheEpisode.value) || "1");
+      animepaheEpisode.value = String(Math.max(1, current + amount));
+      loadMedia();
+      return;
+    }
+
+    if (mode === "tv") {
+      const current = Number(cleanNum(tvEpisode.value) || "1");
+      tvEpisode.value = String(Math.max(1, current + amount));
+      loadMedia();
+    }
+  }
+
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => setMode(btn.dataset.mode));
+  });
+
+  loadBtn.addEventListener("click", loadMedia);
+  prevBtn.addEventListener("click", () => changeEpisode(-1));
+  nextBtn.addEventListener("click", () => changeEpisode(1));
+
+  document.querySelectorAll("input, select").forEach(input => {
+    input.addEventListener("keydown", event => {
+      if (event.key === "Enter") loadMedia();
+    });
+  });
+
+  loadSavedValues();
+  setMode(mode);
+})();
+</script>
+</body>
+</html>
