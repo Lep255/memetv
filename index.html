@@ -1,0 +1,1556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MemeTV</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2304070d'/%3E%3Cpath d='M10 37c7-14 17-21 30-19 6 1 11 4 14 8-8-1-15 1-20 7 8-2 15 0 20 5-13 4-28 5-44-1Z' fill='%23100b12' stroke='%23d69b45' stroke-width='3'/%3E%3Cpath d='M16 39c10 5 25 6 40 1-2 7-9 11-20 12-12 1-20-3-20-13Z' fill='%23090a11' stroke='%23d69b45' stroke-width='3'/%3E%3Cpath d='M31 26h7M34 23v7' stroke='%23fff2d0' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --bg: #03050a;
+      --panel: rgba(8, 13, 24, .94);
+      --panel-2: rgba(14, 21, 35, .94);
+      --line: rgba(70, 88, 122, .58);
+      --line-soft: rgba(148, 163, 184, .18);
+      --gold: #e58d36;
+      --gold-2: #ffd37a;
+      --purple: #b66cff;
+      --text: #f8fafc;
+      --muted: #c4cbd8;
+      --green: #34d178;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top right, rgba(91,64,160,.20), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(229,141,54,.10), transparent 34%),
+        linear-gradient(135deg, #02040a, #080b13 52%, #02040a);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body { padding: 14px; }
+    .page { width: min(1540px, 100%); margin: 0 auto; }
+
+    .hero-logo {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 18px;
+      box-shadow: 0 22px 80px rgba(0,0,0,.52);
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(0, 1.6fr) 560px;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background:
+        radial-gradient(circle at top left, rgba(14,165,233,.08), transparent 26%),
+        linear-gradient(180deg, rgba(10,17,31,.96), rgba(4,8,16,.96));
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.025),
+        0 20px 70px rgba(0,0,0,.35);
+      overflow: hidden;
+    }
+
+    .video-card {
+      min-height: 632px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .player-shell {
+      position: relative;
+      flex: 1;
+      margin: 16px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: #000;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.025),
+        0 16px 45px rgba(0,0,0,.32);
+    }
+
+    .player-overlay-title {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      z-index: 3;
+      text-shadow: 0 4px 20px rgba(0,0,0,.95);
+      pointer-events: none;
+    }
+
+    .player-overlay-title h1 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+    }
+
+    .player-overlay-title div {
+      margin-top: 6px;
+      color: rgba(255,255,255,.88);
+      font-size: 20px;
+    }
+
+    .iframe-wrap {
+      position: relative;
+      height: 100%;
+      min-height: 604px;
+      background: #000;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      min-height: 604px;
+      border: 0;
+      background: #000;
+    }
+
+    .empty {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+      font-size: clamp(22px, 3vw, 34px);
+      background:
+        linear-gradient(rgba(0,0,0,.30), rgba(0,0,0,.70)),
+        radial-gradient(circle at center, rgba(182,108,255,.12), transparent 40%),
+        #05070c;
+      z-index: 2;
+    }
+
+    .empty.hidden { display: none; }
+
+    .side { padding: 20px; overflow: visible; }
+
+    .side-title,
+    .history-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: Georgia, "Times New Roman", serif;
+      color: #fff4d6;
+      font-size: 28px;
+      font-weight: 900;
+      text-shadow: 0 2px 12px rgba(0,0,0,.75);
+    }
+
+    .side-title { margin-bottom: 16px; }
+
+    .anchor-icon {
+      width: 24px;
+      height: 24px;
+      flex: 0 0 24px;
+      fill: var(--gold);
+      filter: drop-shadow(0 0 7px rgba(229,141,54,.38));
+    }
+
+    .media-type-row {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 14px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    label {
+      display: block;
+      color: var(--muted);
+      font-size: 16px;
+      margin: 14px 0 8px;
+    }
+
+    .media-type-row label {
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    input,
+    select,
+    button {
+      width: 100%;
+      border: 1px solid rgba(75,91,124,.65);
+      border-radius: 9px;
+      padding: 12px 14px;
+      background:
+        linear-gradient(180deg, rgba(20,27,43,.98), rgba(10,15,27,.98));
+      color: var(--text);
+      font-size: 18px;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus,
+    button:focus {
+      box-shadow:
+        0 0 0 3px rgba(132,89,255,.22),
+        inset 0 1px 0 rgba(255,255,255,.04);
+      border-color: rgba(131,100,255,.80);
+    }
+
+    button {
+      cursor: pointer;
+      border: 0;
+      font-weight: 800;
+      background: linear-gradient(135deg, rgba(229,162,76,.98), rgba(182,90,247,.95));
+    }
+
+    select {
+      appearance: none;
+      background-image:
+        linear-gradient(180deg, rgba(20,27,43,.98), rgba(10,15,27,.98)),
+        url("data:image/svg+xml,%3Csvg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat, no-repeat;
+      background-position: 0 0, right 14px center;
+      background-size: auto, 18px 18px;
+      padding-right: 44px;
+    }
+
+    select option {
+      background: #0b1220;
+      color: #f8fafc;
+    }
+
+    #mediaMode {
+      display: none;
+    }
+
+    .custom-select { position: relative; width: 100%; }
+    .custom-select-button {
+      min-height: 44px;
+      text-align: left;
+      margin: 0;
+      background:
+        linear-gradient(180deg, rgba(20,27,43,.98), rgba(10,15,27,.98));
+    }
+
+    .custom-select-menu {
+      display: none;
+      position: absolute;
+      z-index: 1000;
+      left: 0;
+      right: 0;
+      top: calc(100% + 6px);
+      padding: 6px;
+      border-radius: 10px;
+      border: 1px solid rgba(75,91,124,.72);
+      background: #0b1220;
+      box-shadow: 0 18px 50px rgba(0,0,0,.58);
+    }
+
+    .custom-select.open .custom-select-menu {
+      display: grid;
+      gap: 4px;
+    }
+
+    .custom-option {
+      margin: 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: transparent;
+      color: #f8fafc;
+      text-align: left;
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .custom-option:hover,
+    .custom-option.active {
+      background: rgba(182,108,255,.22);
+    }
+
+    .form-section { display: none; }
+    .form-section.active { display: block; }
+
+    .search-wrap { position: relative; }
+    .results { display: none; }
+    .results.open { display: grid; }
+
+    .dropdown-results {
+      position: absolute;
+      z-index: 999;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      gap: 8px;
+      max-height: 310px;
+      overflow-y: auto;
+      padding: 8px;
+      border-radius: 14px;
+      background: #111827;
+      border: 1px solid rgba(148,163,184,.25);
+      box-shadow: 0 18px 60px rgba(0,0,0,.65);
+    }
+
+    .result-card {
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      gap: 12px;
+      align-items: center;
+      text-align: left;
+      margin: 0;
+      padding: 8px;
+      border-radius: 10px;
+      background: rgba(37,44,63,.92);
+    }
+
+    .result-card img {
+      width: 56px;
+      height: 76px;
+      object-fit: cover;
+      border-radius: 8px;
+      background: #111;
+    }
+
+    .result-title {
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1.15;
+      color: #c084fc;
+    }
+
+    .result-meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .selected-anime {
+      display: none;
+      grid-template-columns: 70px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 10px;
+      margin-top: 14px;
+      border-radius: 10px;
+      background:
+        linear-gradient(180deg, rgba(17,24,39,.96), rgba(10,15,28,.96));
+      border: 1px solid rgba(75,91,124,.70);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.035),
+        0 12px 28px rgba(0,0,0,.22);
+    }
+
+    .selected-anime.show { display: grid; }
+
+    .selected-anime img {
+      width: 70px;
+      height: 76px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #111;
+    }
+
+    .selected-name {
+      font-weight: 900;
+      color: #b675ff;
+      text-transform: uppercase;
+      font-size: 20px;
+      line-height: 1.15;
+    }
+
+    .selected-meta {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .clear-selected {
+      width: auto;
+      margin: 0;
+      background: transparent;
+      color: #9aa3b4;
+      font-size: 34px;
+      padding: 4px 10px;
+    }
+
+    .episode-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .main-button {
+      margin-top: 18px;
+      min-height: 42px;
+      border-radius: 8px;
+      color: #fff;
+      font-weight: 900;
+      background: linear-gradient(135deg, #e4a24c, #b45af7);
+      box-shadow: 0 10px 22px rgba(0,0,0,.25);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .small {
+      margin: 0;
+      background:
+        linear-gradient(180deg, rgba(43,50,70,.98), rgba(32,38,55,.98));
+      color: var(--text);
+      font-size: 16px;
+      padding: 10px 12px;
+      border-radius: 8px;
+    }
+
+    .divider {
+      height: 1px;
+      background: rgba(148,163,184,.20);
+      margin: 20px 0;
+    }
+
+    .history-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .history-title {
+      font-size: 26px;
+    }
+
+    .clear-history {
+      width: auto;
+      margin: 0;
+      padding: 8px 10px;
+      border-radius: 9px;
+      background: transparent;
+      color: #c084fc;
+      font-size: 15px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .trash-icon {
+      width: 17px;
+      height: 17px;
+      fill: #c084fc;
+    }
+
+    .history-list {
+      max-height: 245px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      padding-right: 2px;
+    }
+
+    .history-list::-webkit-scrollbar { display: none; }
+
+    .history-list button {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      text-align: left;
+      gap: 10px;
+      min-height: 48px;
+      margin: 0;
+      padding: 10px 12px;
+      line-height: 1.25;
+      border-radius: 10px;
+      background:
+        linear-gradient(180deg, rgba(19,27,44,.98), rgba(12,18,32,.98));
+      border: 1px solid rgba(75,91,124,.46);
+      color: var(--text);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.035),
+        0 8px 20px rgba(0,0,0,.18);
+    }
+
+    .history-list button span:first-child {
+      display: block;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      max-height: 42px;
+      overflow: hidden;
+    }
+
+    .history-list button:focus {
+      box-shadow: none;
+      outline: none;
+    }
+
+    .history-list button:focus-visible {
+      box-shadow: 0 0 0 2px rgba(182,108,255,.24);
+    }
+
+    .adblock-banner {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-top: 14px;
+      padding: 18px 20px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background:
+        radial-gradient(circle at left, rgba(14,165,233,.07), transparent 26%),
+        linear-gradient(180deg, rgba(9,16,29,.96), rgba(4,9,18,.96));
+      color: var(--text);
+      line-height: 1.35;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.025),
+        0 18px 48px rgba(0,0,0,.32);
+    }
+
+    .shield-icon {
+      width: 58px;
+      height: 58px;
+      flex: 0 0 58px;
+      fill: var(--gold);
+      filter: drop-shadow(0 0 9px rgba(229,141,54,.32));
+    }
+
+    .adblock-title {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      color: #fff4d6;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .adblock-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: #d9dee9;
+      font-weight: 500;
+      margin-left: 8px;
+    }
+
+    .adblock-svg {
+      width: 24px;
+      height: 24px;
+      flex: 0 0 24px;
+      filter: drop-shadow(0 0 8px rgba(228,59,59,.22));
+    }
+
+    .adblock-note {
+      margin-top: 6px;
+      color: #d0d5df;
+      font-size: 16px;
+      max-width: 760px;
+    }
+
+    @media (max-width: 1050px) {
+      .app { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 650px) {
+      body { padding: 10px; }
+      .app { margin-top: 10px; gap: 10px; }
+      .video-card { min-height: auto; }
+      .iframe-wrap, iframe { min-height: 58vh; }
+      .media-type-row,
+      .episode-grid { grid-template-columns: 1fr; gap: 0; }
+      .adblock-banner { align-items: flex-start; }
+      .shield-icon { display: none; }
+      .adblock-brand { margin-left: 0; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <img class="hero-logo" src="MemeTVLogo.png" alt="MemeTV">
+
+    <main class="app">
+      <section>
+        <div class="panel video-card">
+          <div class="player-shell">
+            <div class="player-overlay-title">
+              <h1 id="videoTitle">MemeTV</h1>
+              <div id="meta">Pick a type, search/select anime, then load.</div>
+            </div>
+
+            <div class="iframe-wrap">
+              <iframe id="player" title="Video Player" allowfullscreen referrerpolicy="no-referrer"></iframe>
+              <div id="empty" class="empty">Nothing loaded yet.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="adblock-banner">
+          <svg class="shield-icon" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M32 3 8 13v16c0 15 9.5 27.5 24 32 14.5-4.5 24-17 24-32V13L32 3Zm0 6.5 18 7.5v12c0 11.2-6.7 21.6-18 25.5C20.7 50.6 14 40.2 14 29V17l18-7.5Z"/>
+            <path d="M32 17a3 3 0 0 0-3 3c0 1.1.6 2.1 1.5 2.6V26h-5v-3h-3v8h3v-2h5v10.7a8 8 0 0 1-6.3-5.2h3v-3h-7v7h3v-1.2A11 11 0 0 0 30.5 43v2h3v-2a11 11 0 0 0 7.3-5.7v1.2h3v-7h-7v3h3a8 8 0 0 1-6.3 5.2V29h5v2h3v-8h-3v3h-5v-3.4A3 3 0 0 0 32 17Z"/>
+          </svg>
+
+          <div>
+            <div class="adblock-title">
+              <span>Recommended AdBlockers:</span>
+              <span class="adblock-brand">
+                <svg class="adblock-svg" viewBox="0 0 64 64" aria-hidden="true">
+                  <path d="M32 3 9 12v17c0 15.5 9.4 27.2 23 32 13.6-4.8 23-16.5 23-32V12L32 3Z" fill="#e43b3b"/>
+                  <path d="M23 17h18l6 6v18l-6 6H23l-6-6V23l6-6Z" fill="#fff"/>
+                  <path d="M25 24h6v19h-6V24Zm8 0h6v19h-6V24Z" fill="#e43b3b"/>
+                </svg>
+                AdBlock
+              </span>
+              <span class="adblock-brand">
+                <svg class="adblock-svg" viewBox="0 0 64 64" aria-hidden="true">
+                  <path d="M32 3 9 12v17c0 15.5 9.4 27.2 23 32 13.6-4.8 23-16.5 23-32V12L32 3Z" fill="#8f151a"/>
+                  <text x="32" y="39" text-anchor="middle" font-size="21" font-family="Arial, sans-serif" font-weight="900" fill="#fff">uB</text>
+                </svg>
+                uBlock Origin
+              </span>
+            </div>
+            <div class="adblock-note">
+              This page does not bring ads. If you are getting ads, it's due to the video player. Make sure to keep your ad blockers updated.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel side">
+        <div class="side-title">
+          <svg class="anchor-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2a2 2 0 0 0-2 2c0 .74.4 1.39 1 1.73V8H7V6H5v5h2V9h4v8.7A6.5 6.5 0 0 1 5.6 13H8v-2H3v5h2v-1.2A8.5 8.5 0 0 0 11 20.94V22h2v-1.06a8.5 8.5 0 0 0 6-6.14V16h2v-5h-5v2h2.4a6.5 6.5 0 0 1-5.4 4.7V9h4v2h2V6h-2v2h-4V5.73A2 2 0 0 0 12 2Zm0 1.4a.6.6 0 1 1 0 1.2.6.6 0 0 1 0-1.2Z"/>
+          </svg>
+          Load
+        </div>
+
+        <div class="media-type-row">
+          <label for="mediaMode">Media Type</label>
+          <div class="media-type-control">
+            <select id="mediaMode">
+              <option value="anime" selected>Anime</option>
+              <option value="animepahe">AnimePahe</option>
+              <option value="movie">Movie</option>
+              <option value="tv">TV Show</option>
+            </select>
+            <div class="custom-select" id="mediaModeCustom">
+              <button class="custom-select-button" id="mediaModeButton" type="button">Anime</button>
+              <div class="custom-select-menu">
+                <button class="custom-option active" type="button" data-value="anime">Anime</button>
+                <button class="custom-option" type="button" data-value="animepahe">AnimePahe</button>
+                <button class="custom-option" type="button" data-value="movie">Movie</button>
+                <button class="custom-option" type="button" data-value="tv">TV Show</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="animeSearchBox" class="search-wrap">
+          <label for="animeSearch">Search AniList Anime</label>
+          <input id="animeSearch" type="text" placeholder="Search anime name or AniList ID...">
+          <div id="searchResults" class="results dropdown-results"></div>
+
+          <div id="selectedAnimeCard" class="selected-anime">
+            <img id="selectedAnimeImage" alt="">
+            <div>
+              <div id="selectedAnimeName" class="selected-name"></div>
+              <div id="selectedAnimeMeta" class="selected-meta"></div>
+            </div>
+            <button id="clearSelectedAnime" class="clear-selected" type="button">×</button>
+          </div>
+        </div>
+
+        <section id="animeForm" class="form-section active">
+          <input id="animeId" type="hidden">
+
+          <div class="episode-grid">
+            <div>
+              <label for="animeEpisode">Episode</label>
+              <select id="animeEpisode">
+                <option value="1">Episode 1</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="animeType">Sub / Dub</label>
+              <select id="animeType">
+                <option value="sub">SUB</option>
+                <option value="dub">DUB</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section id="animepaheForm" class="form-section">
+          <input id="animepaheId" type="hidden">
+
+          <div class="episode-grid">
+            <div>
+              <label for="animepaheEpisode">Episode</label>
+              <select id="animepaheEpisode">
+                <option value="1">Episode 1</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="animepaheType">Sub / Dub</label>
+              <select id="animepaheType">
+                <option value="sub">SUB</option>
+                <option value="dub">DUB</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section id="movieForm" class="form-section">
+          <label for="movieId">Movie ID</label>
+          <input id="movieId" type="text" inputmode="numeric" placeholder="Movie ID">
+        </section>
+
+        <section id="tvForm" class="form-section">
+          <label for="tvId">TV Show ID</label>
+          <input id="tvId" type="text" inputmode="numeric" placeholder="TV Show ID">
+
+          <div class="episode-grid">
+            <div>
+              <label for="tvSeason">Season</label>
+              <input id="tvSeason" type="number" min="1" step="1" value="1" placeholder="Season">
+            </div>
+
+            <div>
+              <label for="tvEpisode">Episode</label>
+              <input id="tvEpisode" type="number" min="1" step="1" value="1" placeholder="Episode">
+            </div>
+          </div>
+        </section>
+
+        <button id="loadBtn" class="main-button">Refresh/Retry</button>
+
+        <div class="row">
+          <button id="prevBtn" class="small">Previous</button>
+          <button id="nextBtn" class="small">Next</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="history-head">
+          <div class="history-title">
+            <svg class="anchor-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2a2 2 0 0 0-2 2c0 .74.4 1.39 1 1.73V8H7V6H5v5h2V9h4v8.7A6.5 6.5 0 0 1 5.6 13H8v-2H3v5h2v-1.2A8.5 8.5 0 0 0 11 20.94V22h2v-1.06a8.5 8.5 0 0 0 6-6.14V16h2v-5h-5v2h2.4a6.5 6.5 0 0 1-5.4 4.7V9h4v2h2V6h-2v2h-4V5.73A2 2 0 0 0 12 2Zm0 1.4a.6.6 0 1 1 0 1.2.6.6 0 0 1 0-1.2Z"/>
+            </svg>
+            History
+          </div>
+          <button id="clearHistoryBtn" class="clear-history" type="button">
+            <svg class="trash-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-.8 12H7.8L7 9Zm3 2v8h2v-8h-2Zm4 0v8h2v-8h-2Z"/>
+            </svg>
+            Clear History
+          </button>
+        </div>
+
+        <div id="historyList" class="history-list"></div>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      const player = document.getElementById("player");
+      const empty = document.getElementById("empty");
+      const videoTitle = document.getElementById("videoTitle");
+      const meta = document.getElementById("meta");
+
+      const mediaMode = document.getElementById("mediaMode");
+      const mediaModeCustom = document.getElementById("mediaModeCustom");
+      const mediaModeButton = document.getElementById("mediaModeButton");
+
+      const loadBtn = document.getElementById("loadBtn");
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const clearHistoryBtn = document.getElementById("clearHistoryBtn");
+
+      const animeSearchBox = document.getElementById("animeSearchBox");
+      const animeSearch = document.getElementById("animeSearch");
+      const searchResults = document.getElementById("searchResults");
+
+      const selectedAnimeCard = document.getElementById("selectedAnimeCard");
+      const selectedAnimeImage = document.getElementById("selectedAnimeImage");
+      const selectedAnimeName = document.getElementById("selectedAnimeName");
+      const selectedAnimeMeta = document.getElementById("selectedAnimeMeta");
+      const clearSelectedAnime = document.getElementById("clearSelectedAnime");
+
+      const animeId = document.getElementById("animeId");
+      const animeEpisode = document.getElementById("animeEpisode");
+      const animeType = document.getElementById("animeType");
+
+      const animepaheId = document.getElementById("animepaheId");
+      const animepaheEpisode = document.getElementById("animepaheEpisode");
+      const animepaheType = document.getElementById("animepaheType");
+
+      const movieId = document.getElementById("movieId");
+
+      const tvId = document.getElementById("tvId");
+      const tvSeason = document.getElementById("tvSeason");
+      const tvEpisode = document.getElementById("tvEpisode");
+
+      let mode = "anime";
+      let searchTimer = null;
+      let lastSearchText = "";
+
+      const titleCache = {};
+      const animeMetaCache = {};
+
+      function cleanNum(value) {
+        return String(value || "").replace(/[^\d]/g, "");
+      }
+
+      function cleanMinOne(value) {
+        return String(Math.max(1, Number(cleanNum(value) || "1")));
+      }
+
+      function getAvailableEpisodes(anime) {
+        const finishedTotal = Number(anime?.episodes || 0);
+        const nextEpisode = Number(anime?.nextAiringEpisode?.episode || 0);
+
+        if (finishedTotal > 0) return finishedTotal;
+        if (nextEpisode > 1) return nextEpisode - 1;
+
+        return 1;
+      }
+
+      function populateEpisodeDropdown(select, totalEpisodes, selectedEpisode = "1") {
+        const total = Math.max(1, Number(cleanNum(totalEpisodes) || selectedEpisode || "1"));
+        const selected = Math.min(total, Math.max(1, Number(cleanNum(selectedEpisode) || "1")));
+
+        select.innerHTML = "";
+
+        for (let i = 1; i <= total; i++) {
+          const option = document.createElement("option");
+          option.value = String(i);
+          option.textContent = `Episode ${i}`;
+          if (i === selected) option.selected = true;
+          select.appendChild(option);
+        }
+
+        select.dataset.totalEpisodes = String(total);
+      }
+
+      function requireValue(input, label) {
+        let value = cleanNum(input.value);
+
+        if (!value) {
+          alert(label.includes("search") ? "Please search and select an anime first." : `Please enter ${label}.`);
+          input.focus();
+          return "";
+        }
+
+        if (/episode|season/i.test(label)) value = cleanMinOne(value);
+
+        input.value = value;
+        return value;
+      }
+
+      async function aniListRequest(query, variables) {
+        const response = await fetch("https://graphql.anilist.co", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({ query, variables })
+        });
+
+        if (!response.ok) throw new Error("AniList request failed");
+        return response.json();
+      }
+
+      async function getAniListTitle(id) {
+        if (!id) return "";
+        if (titleCache[id]) return titleCache[id];
+
+        const query = `
+          query ($id: Int) {
+            Media(id: $id, type: ANIME) {
+              title { english romaji native }
+            }
+          }
+        `;
+
+        try {
+          const json = await aniListRequest(query, { id: Number(id) });
+          const title = json?.data?.Media?.title;
+          const name = title?.english || title?.romaji || title?.native || "";
+          if (name) titleCache[id] = name;
+          return name;
+        } catch {
+          return "";
+        }
+      }
+
+      async function getAniListAnimeById(id) {
+        if (!id) return null;
+
+        const query = `
+          query ($id: Int) {
+            Media(id: $id, type: ANIME) {
+              id
+              episodes
+              format
+              seasonYear
+              nextAiringEpisode { episode }
+              coverImage { medium }
+              title { english romaji native }
+            }
+          }
+        `;
+
+        try {
+          const json = await aniListRequest(query, { id: Number(id) });
+          return json?.data?.Media || null;
+        } catch {
+          return null;
+        }
+      }
+
+      async function refreshAnimeInfoForHistory(item) {
+        const id = item.mode === "anime" ? item.animeId : item.animepaheId;
+        if (!id) return;
+
+        const anime = await getAniListAnimeById(id);
+        if (!anime) return;
+
+        const name = animeDisplayName(anime);
+        const totalEpisodes = getAvailableEpisodes(anime);
+        const subline = animeSubline(anime);
+
+        titleCache[id] = name;
+        animeMetaCache[id] = {
+          name,
+          image: anime.coverImage?.medium || "",
+          subline,
+          totalEpisodes
+        };
+
+        const selectedEpisode = item.mode === "anime"
+          ? (item.animeEpisode || "1")
+          : (item.animepaheEpisode || "1");
+
+        if (item.mode === "anime") {
+          populateEpisodeDropdown(animeEpisode, totalEpisodes, selectedEpisode);
+          item.animeName = name;
+          item.animeTotalEpisodes = String(totalEpisodes);
+        } else {
+          populateEpisodeDropdown(animepaheEpisode, totalEpisodes, selectedEpisode);
+          item.animeName = name;
+          item.animepaheTotalEpisodes = String(totalEpisodes);
+        }
+
+        item.label = `${name} • Episode ${selectedEpisode} • ${
+          item.mode === "anime"
+            ? (item.animeType || "sub").toUpperCase()
+            : (item.animepaheType || "sub").toUpperCase()
+        }`;
+      }
+
+      function animeDisplayName(anime) {
+        return anime.title?.english || anime.title?.romaji || anime.title?.native || `Anime ${anime.id}`;
+      }
+
+      function animeSubline(anime) {
+        const count = getAvailableEpisodes(anime);
+
+        return [
+          anime.seasonYear || "",
+          anime.format || "",
+          count ? `${count} Episodes` : ""
+        ].filter(Boolean).join(" • ");
+      }
+
+      async function searchAniList() {
+        const text = animeSearch.value.trim();
+
+        if (!text) {
+          searchResults.innerHTML = "";
+          searchResults.classList.remove("open");
+          return;
+        }
+
+        if (text.length < 3) {
+          searchResults.innerHTML = '<div style="color:#aaa;">Type at least 3 letters, or paste an AniList ID.</div>';
+          searchResults.classList.add("open");
+          return;
+        }
+
+        searchResults.innerHTML = '<div style="color:#aaa;">Searching...</div>';
+        searchResults.classList.add("open");
+
+        const isIdSearch = /^\d+$/.test(text);
+
+        const query = isIdSearch ? `
+          query ($id: Int) {
+            Media(id: $id, type: ANIME) {
+              id
+              episodes
+              format
+              seasonYear
+              nextAiringEpisode { episode }
+              coverImage { medium }
+              title { english romaji native }
+            }
+          }
+        ` : `
+          query ($search: String) {
+            Page(page: 1, perPage: 5) {
+              media(search: $search, type: ANIME, sort: SEARCH_MATCH) {
+                id
+                episodes
+                format
+                seasonYear
+                nextAiringEpisode { episode }
+                coverImage { medium }
+                title { english romaji native }
+              }
+            }
+          }
+        `;
+
+        try {
+          const json = await aniListRequest(query, isIdSearch ? { id: Number(text) } : { search: text });
+          const results = isIdSearch
+            ? (json?.data?.Media ? [json.data.Media] : [])
+            : (json?.data?.Page?.media || []);
+
+          renderSearchResults(results);
+        } catch {
+          searchResults.innerHTML = '<div style="color:#ffb3b3;">Search failed. Try again.</div>';
+          searchResults.classList.add("open");
+        }
+      }
+
+      function renderSearchResults(results) {
+        searchResults.innerHTML = "";
+        searchResults.classList.add("open");
+
+        if (!results.length) {
+          searchResults.innerHTML = '<div style="color:#aaa;">No results found.</div>';
+          return;
+        }
+
+        for (const anime of results) {
+          const name = animeDisplayName(anime);
+          const sub = [`ID ${anime.id}`, animeSubline(anime)].filter(Boolean).join(" • ");
+
+          const btn = document.createElement("button");
+          btn.className = "result-card";
+          btn.innerHTML = `
+            <img src="${anime.coverImage?.medium || ""}" alt="">
+            <div>
+              <div class="result-title"></div>
+              <div class="result-meta"></div>
+            </div>
+          `;
+
+          btn.querySelector(".result-title").textContent = name;
+          btn.querySelector(".result-meta").textContent = sub;
+          btn.addEventListener("click", () => selectAnime(anime, true));
+
+          searchResults.appendChild(btn);
+        }
+      }
+
+      function selectAnime(anime, autoplay) {
+        const name = animeDisplayName(anime);
+        const totalEpisodes = getAvailableEpisodes(anime);
+
+        titleCache[anime.id] = name;
+        animeMetaCache[anime.id] = {
+          name,
+          image: anime.coverImage?.medium || "",
+          subline: animeSubline(anime),
+          totalEpisodes
+        };
+
+        if (mode === "animepahe") {
+          animepaheId.value = anime.id;
+          populateEpisodeDropdown(animepaheEpisode, totalEpisodes, "1");
+        } else {
+          setMode("anime");
+          animeId.value = anime.id;
+          populateEpisodeDropdown(animeEpisode, totalEpisodes, "1");
+        }
+
+        updateSelectedAnimeCard(anime.id);
+        saveValues();
+
+        animeSearch.value = name;
+        searchResults.innerHTML = "";
+        searchResults.classList.remove("open");
+
+        if (autoplay) loadMedia();
+      }
+
+      function updateSelectedAnimeCard(id) {
+        const info = animeMetaCache[id];
+
+        if (!id || !info) {
+          selectedAnimeCard.classList.remove("show");
+          return;
+        }
+
+        selectedAnimeImage.src = info.image || "";
+        selectedAnimeName.textContent = info.name;
+        selectedAnimeMeta.textContent = info.subline || `ID ${id}`;
+        selectedAnimeCard.classList.add("show");
+      }
+
+      function queueAnimeSearch() {
+        clearTimeout(searchTimer);
+        const text = animeSearch.value.trim();
+
+        if (!text) {
+          searchResults.innerHTML = "";
+          searchResults.classList.remove("open");
+          lastSearchText = "";
+          return;
+        }
+
+        if (text.length < 3) {
+          searchResults.innerHTML = '<div style="color:#aaa;">Type at least 3 letters, or paste an AniList ID.</div>';
+          searchResults.classList.add("open");
+          lastSearchText = "";
+          return;
+        }
+
+        searchResults.innerHTML = '<div style="color:#aaa;">Searching...</div>';
+        searchResults.classList.add("open");
+
+        searchTimer = setTimeout(() => {
+          if (text === lastSearchText) return;
+          lastSearchText = text;
+          searchAniList();
+        }, 550);
+      }
+
+      function buildUrl() {
+        if (mode === "anime") {
+          const id = requireValue(animeId, "an anime from search");
+          if (!id) return "";
+
+          const ep = requireValue(animeEpisode, "Episode Number");
+          if (!ep) return "";
+
+          return `https://vidnest.fun/anime/${id}/${ep}/${animeType.value || "sub"}`;
+        }
+
+        if (mode === "animepahe") {
+          const id = requireValue(animepaheId, "an anime from search");
+          if (!id) return "";
+
+          const ep = requireValue(animepaheEpisode, "Episode Number");
+          if (!ep) return "";
+
+          return `https://vidnest.fun/animepahe/${id}/${ep}/${animepaheType.value || "sub"}`;
+        }
+
+        if (mode === "movie") {
+          const id = requireValue(movieId, "Movie ID");
+          if (!id) return "";
+
+          return `https://vidnest.fun/movie/${id}`;
+        }
+
+        const id = requireValue(tvId, "TV Show ID");
+        if (!id) return "";
+
+        const season = requireValue(tvSeason, "Season");
+        if (!season) return "";
+
+        const ep = requireValue(tvEpisode, "Episode");
+        if (!ep) return "";
+
+        return `https://vidnest.fun/tv/${id}/${season}/${ep}`;
+      }
+
+      function saveValues() {
+        localStorage.setItem("lastMode", mode);
+
+        localStorage.setItem("lastAnimeId", animeId.value);
+        localStorage.setItem("lastAnimeEpisode", animeEpisode.value || "1");
+        localStorage.setItem("lastAnimeTotalEpisodes", animeEpisode.dataset.totalEpisodes || "1");
+        localStorage.setItem("lastAnimeType", animeType.value);
+
+        localStorage.setItem("lastAnimepaheId", animepaheId.value);
+        localStorage.setItem("lastAnimepaheEpisode", animepaheEpisode.value || "1");
+        localStorage.setItem("lastAnimepaheTotalEpisodes", animepaheEpisode.dataset.totalEpisodes || "1");
+        localStorage.setItem("lastAnimepaheType", animepaheType.value);
+
+        localStorage.setItem("lastMovieId", movieId.value);
+
+        localStorage.setItem("lastTvId", tvId.value);
+        localStorage.setItem("lastTvSeason", tvSeason.value || "1");
+        localStorage.setItem("lastTvEpisode", tvEpisode.value || "1");
+      }
+
+      function loadSavedValues() {
+        mode = localStorage.getItem("lastMode") || "anime";
+
+        animeId.value = localStorage.getItem("lastAnimeId") || "";
+        populateEpisodeDropdown(
+          animeEpisode,
+          localStorage.getItem("lastAnimeTotalEpisodes") || "1",
+          localStorage.getItem("lastAnimeEpisode") || "1"
+        );
+        animeType.value = localStorage.getItem("lastAnimeType") || "sub";
+
+        animepaheId.value = localStorage.getItem("lastAnimepaheId") || "";
+        populateEpisodeDropdown(
+          animepaheEpisode,
+          localStorage.getItem("lastAnimepaheTotalEpisodes") || "1",
+          localStorage.getItem("lastAnimepaheEpisode") || "1"
+        );
+        animepaheType.value = localStorage.getItem("lastAnimepaheType") || "sub";
+
+        movieId.value = localStorage.getItem("lastMovieId") || "";
+
+        tvId.value = localStorage.getItem("lastTvId") || "";
+        tvSeason.value = localStorage.getItem("lastTvSeason") || "1";
+        tvEpisode.value = localStorage.getItem("lastTvEpisode") || "1";
+      }
+
+      function setMode(nextMode) {
+        mode = nextMode;
+        mediaMode.value = mode;
+
+        const selectedOption = document.querySelector(`.custom-option[data-value="${mode}"]`);
+        mediaModeButton.textContent = selectedOption ? selectedOption.textContent : "Anime";
+
+        document.querySelectorAll(".custom-option").forEach(option => {
+          option.classList.toggle("active", option.dataset.value === mode);
+        });
+
+        document.querySelectorAll(".form-section").forEach(section => section.classList.remove("active"));
+        document.getElementById(`${mode}Form`).classList.add("active");
+
+        const showSearch = mode === "anime" || mode === "animepahe";
+        animeSearchBox.style.display = showSearch ? "block" : "none";
+
+        if (!showSearch) {
+          searchResults.innerHTML = "";
+          searchResults.classList.remove("open");
+          selectedAnimeCard.classList.remove("show");
+        }
+
+        loadBtn.textContent = "Refresh/Retry";
+
+        if (mode === "movie") {
+          prevBtn.style.display = "none";
+          nextBtn.style.display = "none";
+          videoTitle.textContent = "MemeTV";
+          meta.textContent = "Movie mode.";
+        } else if (mode === "tv") {
+          prevBtn.style.display = "";
+          nextBtn.style.display = "";
+          videoTitle.textContent = "MemeTV";
+          meta.textContent = "TV show mode.";
+        } else {
+          prevBtn.style.display = "";
+          nextBtn.style.display = "";
+          videoTitle.textContent = "MemeTV";
+          meta.textContent = mode === "animepahe"
+            ? "Search and select an anime for AnimePahe, then choose episode/sub or dub."
+            : "Search and select an anime, then choose episode/sub or dub.";
+
+          updateSelectedAnimeCard(mode === "animepahe" ? animepaheId.value : animeId.value);
+        }
+
+        localStorage.setItem("lastMode", mode);
+      }
+
+      async function currentHistoryItem(url) {
+        if (mode === "anime") {
+          const animeName = await getAniListTitle(animeId.value);
+
+          return {
+            mode,
+            url,
+            label: `${animeName || "Anime ID " + animeId.value} • Episode ${animeEpisode.value} • ${animeType.value.toUpperCase()}`,
+            animeId: animeId.value,
+            animeEpisode: animeEpisode.value,
+            animeTotalEpisodes: animeEpisode.dataset.totalEpisodes || "1",
+            animeType: animeType.value,
+            animeName
+          };
+        }
+
+        if (mode === "animepahe") {
+          const animeName = await getAniListTitle(animepaheId.value);
+
+          return {
+            mode,
+            url,
+            label: `${animeName || "AnimePahe ID " + animepaheId.value} • Episode ${animepaheEpisode.value} • ${animepaheType.value.toUpperCase()}`,
+            animepaheId: animepaheId.value,
+            animepaheEpisode: animepaheEpisode.value,
+            animepaheTotalEpisodes: animepaheEpisode.dataset.totalEpisodes || "1",
+            animepaheType: animepaheType.value,
+            animeName
+          };
+        }
+
+        if (mode === "movie") {
+          return {
+            mode,
+            url,
+            label: `Movie • ID ${movieId.value}`,
+            movieId: movieId.value
+          };
+        }
+
+        return {
+          mode,
+          url,
+          label: `TV • ID ${tvId.value} • S${tvSeason.value}E${tvEpisode.value}`,
+          tvId: tvId.value,
+          tvSeason: tvSeason.value,
+          tvEpisode: tvEpisode.value
+        };
+      }
+
+      function addHistory(item) {
+        let items = [];
+
+        try {
+          items = JSON.parse(localStorage.getItem("vidnestHistory") || "[]");
+        } catch {}
+
+        items = items.filter(existing => existing.url !== item.url);
+        items.unshift(item);
+        items = items.slice(0, 30);
+
+        localStorage.setItem("vidnestHistory", JSON.stringify(items));
+        renderHistory();
+      }
+
+      async function applyHistoryItem(item) {
+        if (!item || !item.mode || !item.url) return;
+
+        setMode(item.mode);
+
+        if (item.mode === "anime") {
+          animeId.value = item.animeId || "";
+          animeType.value = item.animeType || "sub";
+
+          populateEpisodeDropdown(
+            animeEpisode,
+            item.animeTotalEpisodes || item.animeEpisode || "1",
+            item.animeEpisode || "1"
+          );
+
+          await refreshAnimeInfoForHistory(item);
+
+          animeSearch.value = item.animeName || "";
+          updateSelectedAnimeCard(item.animeId);
+        } else if (item.mode === "animepahe") {
+          animepaheId.value = item.animepaheId || "";
+          animepaheType.value = item.animepaheType || "sub";
+
+          populateEpisodeDropdown(
+            animepaheEpisode,
+            item.animepaheTotalEpisodes || item.animepaheEpisode || "1",
+            item.animepaheEpisode || "1"
+          );
+
+          await refreshAnimeInfoForHistory(item);
+
+          animeSearch.value = item.animeName || "";
+          updateSelectedAnimeCard(item.animepaheId);
+        } else if (item.mode === "movie") {
+          movieId.value = item.movieId || "";
+        } else if (item.mode === "tv") {
+          tvId.value = item.tvId || "";
+          tvSeason.value = cleanMinOne(item.tvSeason || "1");
+          tvEpisode.value = cleanMinOne(item.tvEpisode || "1");
+        }
+
+        const refreshedUrl = buildUrl() || item.url;
+        player.src = refreshedUrl;
+        empty.classList.add("hidden");
+
+        videoTitle.textContent = item.label?.split(" • ")[0] || "MemeTV";
+        meta.textContent = item.label || "Loaded from history";
+
+        item.url = refreshedUrl;
+        saveValues();
+        addHistory(item);
+      }
+
+      function renderHistory() {
+        const box = document.getElementById("historyList");
+        box.innerHTML = "";
+
+        let items = [];
+
+        try {
+          items = JSON.parse(localStorage.getItem("vidnestHistory") || "[]");
+        } catch {}
+
+        if (!items.length) {
+          box.innerHTML = '<div style="color:#aaa;">No history yet.</div>';
+          return;
+        }
+
+        items.forEach(item => {
+          const b = document.createElement("button");
+          b.innerHTML = `<span>${item.label || item.url}</span><span style="color:#94a3b8;font-size:15px;">ⓘ</span>`;
+          b.onclick = () => applyHistoryItem(item);
+          box.appendChild(b);
+        });
+      }
+
+      async function loadMedia() {
+        const url = buildUrl();
+        if (!url) return;
+
+        player.src = url;
+        empty.classList.add("hidden");
+        saveValues();
+
+        let item;
+
+        if (mode === "anime") {
+          meta.textContent = `Loading title... • Episode ${animeEpisode.value} • ${animeType.value.toUpperCase()}`;
+          item = await currentHistoryItem(url);
+          videoTitle.textContent = item.animeName || "MemeTV";
+          meta.textContent = item.label;
+        } else if (mode === "animepahe") {
+          meta.textContent = `Loading title... • Episode ${animepaheEpisode.value} • ${animepaheType.value.toUpperCase()}`;
+          item = await currentHistoryItem(url);
+          videoTitle.textContent = item.animeName || "MemeTV";
+          meta.textContent = item.label;
+        } else if (mode === "movie") {
+          videoTitle.textContent = "Movie";
+          meta.textContent = `Movie ID ${movieId.value}`;
+          item = await currentHistoryItem(url);
+        } else {
+          videoTitle.textContent = "TV Show";
+          meta.textContent = `TV ID ${tvId.value} • Season ${tvSeason.value} • Episode ${tvEpisode.value}`;
+          item = await currentHistoryItem(url);
+        }
+
+        addHistory(item);
+      }
+
+      function changeEpisode(amount) {
+        if (mode === "anime") {
+          const current = Number(cleanMinOne(animeEpisode.value));
+          const total = Number(animeEpisode.dataset.totalEpisodes || "1");
+          animeEpisode.value = String(Math.min(total, Math.max(1, current + amount)));
+          loadMedia();
+          return;
+        }
+
+        if (mode === "animepahe") {
+          const current = Number(cleanMinOne(animepaheEpisode.value));
+          const total = Number(animepaheEpisode.dataset.totalEpisodes || "1");
+          animepaheEpisode.value = String(Math.min(total, Math.max(1, current + amount)));
+          loadMedia();
+          return;
+        }
+
+        if (mode === "tv") {
+          const current = Number(cleanMinOne(tvEpisode.value));
+          tvEpisode.value = String(Math.max(1, current + amount));
+          loadMedia();
+        }
+      }
+
+      mediaModeButton.addEventListener("click", event => {
+        event.stopPropagation();
+        mediaModeCustom.classList.toggle("open");
+      });
+
+      document.querySelectorAll(".custom-option").forEach(option => {
+        option.addEventListener("click", event => {
+          event.stopPropagation();
+          setMode(option.dataset.value);
+          mediaModeCustom.classList.remove("open");
+        });
+      });
+
+      animeSearch.addEventListener("input", queueAnimeSearch);
+      animeSearch.addEventListener("keydown", event => {
+        if (event.key === "Enter") searchAniList();
+      });
+      animeSearch.addEventListener("focus", () => {
+        if (searchResults.innerHTML.trim()) searchResults.classList.add("open");
+      });
+
+      clearSelectedAnime.addEventListener("click", () => {
+        animeId.value = "";
+        animepaheId.value = "";
+        animeSearch.value = "";
+        selectedAnimeCard.classList.remove("show");
+        searchResults.innerHTML = "";
+        searchResults.classList.remove("open");
+      });
+
+      loadBtn.addEventListener("click", loadMedia);
+
+      [animeEpisode, animeType, animepaheEpisode, animepaheType].forEach(control => {
+        control.addEventListener("change", () => {
+          if (empty.classList.contains("hidden")) loadMedia();
+        });
+      });
+
+      prevBtn.addEventListener("click", () => changeEpisode(-1));
+      nextBtn.addEventListener("click", () => changeEpisode(1));
+
+      document.querySelectorAll("input, select").forEach(input => {
+        input.addEventListener("keydown", event => {
+          if (event.key === "Enter" && input !== animeSearch) loadMedia();
+        });
+      });
+
+      document.querySelectorAll('input[type="number"]').forEach(input => {
+        input.addEventListener("input", () => {
+          if (Number(input.value) < 1) input.value = "1";
+        });
+
+        input.addEventListener("blur", () => {
+          input.value = cleanMinOne(input.value);
+        });
+      });
+
+      clearHistoryBtn.addEventListener("click", () => {
+        localStorage.removeItem("vidnestHistory");
+        renderHistory();
+      });
+
+      document.addEventListener("click", event => {
+        if (!animeSearchBox.contains(event.target)) searchResults.classList.remove("open");
+        if (!mediaModeCustom.contains(event.target)) mediaModeCustom.classList.remove("open");
+      });
+
+      loadSavedValues();
+      setMode(mode);
+      renderHistory();
+    })();
+  </script>
+</body>
+</html>
