@@ -577,7 +577,392 @@
       .shield-icon { display: none; }
       .adblock-brand { margin-left: 0; }
     }
-  </style>
+  
+    /* ===== v34 compact 80% redesign, no transform scaling ===== */
+    :root {
+      --compact-page-width: 1280px;
+      --compact-sidebar-width: 448px;
+      --compact-gap: 11px;
+      --compact-radius: 13px;
+      --compact-pad: 16px;
+      --compact-input-font: 15px;
+      --compact-label-font: 14px;
+      --compact-small-font: 13px;
+    }
+
+    body {
+      padding: 10px;
+    }
+
+    .page {
+      width: min(var(--compact-page-width), 100%);
+    }
+
+    .hero-logo,
+    .hero-logo-img {
+      border-radius: var(--compact-radius) !important;
+      max-height: 210px;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    .app {
+      grid-template-columns: minmax(0, 1.6fr) var(--compact-sidebar-width);
+      gap: var(--compact-gap);
+      margin-top: var(--compact-gap);
+    }
+
+    .panel {
+      border-radius: var(--compact-radius);
+    }
+
+    .video-card {
+      min-height: 500px;
+    }
+
+    .player-shell {
+      margin: 12px;
+      border-radius: 11px;
+    }
+
+    .iframe-wrap,
+    iframe {
+      min-height: 472px;
+    }
+
+    .player-overlay-title {
+      top: 14px;
+      left: 14px;
+    }
+
+    .player-overlay-title h1 {
+      font-size: 21px;
+    }
+
+    .player-overlay-title div {
+      font-size: 16px;
+      margin-top: 4px;
+    }
+
+    .side {
+      padding: var(--compact-pad);
+    }
+
+    .side-title,
+    .history-title {
+      font-size: 22px;
+      gap: 8px;
+    }
+
+    .anchor-icon {
+      width: 19px;
+      height: 19px;
+      flex-basis: 19px;
+    }
+
+    .media-type-row {
+      grid-template-columns: 94px 1fr;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    label {
+      font-size: var(--compact-label-font);
+      margin: 10px 0 6px;
+    }
+
+    input,
+    select,
+    button,
+    .custom-select-button {
+      min-height: 36px;
+      font-size: var(--compact-input-font);
+      padding: 9px 11px;
+      border-radius: 8px;
+    }
+
+    select {
+      padding-right: 34px;
+      background-position: 0 0, right 10px center;
+      background-size: auto, 15px 15px;
+    }
+
+    .custom-option {
+      font-size: 14px;
+      padding: 8px 10px;
+    }
+
+    .dropdown-results {
+      max-height: 255px;
+      padding: 6px;
+      border-radius: 11px;
+      gap: 6px;
+    }
+
+    .result-card {
+      grid-template-columns: 42px 1fr;
+      gap: 9px;
+      padding: 7px;
+      border-radius: 8px;
+    }
+
+    .result-card img {
+      width: 42px;
+      height: 58px;
+      border-radius: 6px;
+    }
+
+    .result-title {
+      font-size: 13px;
+    }
+
+    .result-meta {
+      font-size: 11px;
+      margin-top: 3px;
+    }
+
+    .selected-anime {
+      grid-template-columns: 54px 1fr auto;
+      gap: 9px;
+      padding: 8px;
+      margin-top: 10px;
+      border-radius: 8px;
+    }
+
+    .selected-anime img {
+      width: 54px;
+      height: 60px;
+      border-radius: 6px;
+    }
+
+    .selected-name {
+      font-size: 16px;
+    }
+
+    .selected-meta {
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .clear-selected {
+      font-size: 26px;
+      padding: 2px 7px;
+    }
+
+    .episode-grid {
+      gap: 14px;
+    }
+
+    .main-button {
+      min-height: 38px;
+      margin-top: 14px;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+
+    .row {
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .small {
+      font-size: 13px;
+      padding: 8px 10px;
+      min-height: 34px;
+    }
+
+    .divider {
+      margin: 14px 0;
+    }
+
+    .history-head {
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+
+    .history-title {
+      font-size: 20px;
+    }
+
+    .clear-history {
+      font-size: 12px;
+      padding: 6px 8px;
+    }
+
+    .trash-icon {
+      width: 14px;
+      height: 14px;
+    }
+
+    .history-list {
+      max-height: 188px;
+      gap: 6px;
+    }
+
+    .history-list button {
+      min-height: 39px;
+      padding: 8px 10px;
+      font-size: 12px;
+      border-radius: 8px;
+    }
+
+    .history-list button span:first-child {
+      max-height: 34px;
+    }
+
+    .adblock-banner {
+      margin-top: var(--compact-gap);
+      padding: 14px 16px;
+      border-radius: var(--compact-radius);
+      gap: 14px;
+    }
+
+    .shield-icon {
+      width: 45px;
+      height: 45px;
+      flex-basis: 45px;
+    }
+
+    .adblock-title {
+      font-size: 16px;
+      gap: 6px;
+    }
+
+    .adblock-brand {
+      gap: 5px;
+      margin-left: 6px;
+    }
+
+    .adblock-svg {
+      width: 20px;
+      height: 20px;
+      flex-basis: 20px;
+    }
+
+    .adblock-note {
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 1050px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-logo,
+      .hero-logo-img {
+        max-height: none;
+      }
+    }
+
+    @media (max-width: 650px) {
+      body {
+        padding: 8px;
+      }
+
+      .app {
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .media-type-row,
+      .episode-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+
+      .iframe-wrap,
+      iframe {
+        min-height: 58vh;
+      }
+
+      .shield-icon {
+        display: none;
+      }
+    }
+
+
+.copy-filter-block{
+margin-top:14px;
+padding:14px;
+border:1px solid rgba(255,180,70,.25);
+border-radius:12px;
+background:#0f1524;
+}
+.copy-filter-title{
+font-weight:700;
+margin-bottom:8px;
+color:#f3d49a;
+}
+.filter-code{
+position:relative;
+cursor:pointer;
+font-family:Consolas,monospace;
+background:#0a0d14;
+border:1px solid #2a3245;
+border-radius:10px;
+padding:14px 52px 14px 14px;
+word-break:break-all;
+color:#dfe7ff;
+}
+.filter-copy{
+position:absolute;
+right:10px;
+top:8px;
+background:#1d2638;
+border:1px solid #39455d;
+border-radius:8px;
+padding:4px 8px;
+font-size:12px;
+color:#fff;
+}
+
+
+    .inline-filter {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid rgba(255,180,70,.22);
+      border-radius: 10px;
+      background: rgba(10, 13, 20, .68);
+      max-width: 760px;
+    }
+
+    .inline-filter .copy-filter-title {
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 7px;
+      color: #f3d49a;
+    }
+
+    .inline-filter .filter-code {
+      position: relative;
+      cursor: pointer;
+      font-family: Consolas, "Courier New", monospace;
+      background: #070a10;
+      border: 1px solid #263047;
+      border-radius: 8px;
+      padding: 10px 72px 10px 10px;
+      word-break: break-all;
+      color: #dfe7ff;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .inline-filter .filter-copy {
+      position: absolute;
+      right: 8px;
+      top: 7px;
+      background: #1d2638;
+      border: 1px solid #39455d;
+      border-radius: 7px;
+      padding: 4px 7px;
+      font-size: 11px;
+      color: #fff;
+      font-family: Arial, Helvetica, sans-serif;
+      white-space: nowrap;
+    }
+
+</style>
 </head>
 
 <body>
@@ -628,6 +1013,14 @@
             <div class="adblock-note">
               This page does not bring ads. If you are getting ads, it's due to the video player. Make sure to keep your ad blockers updated.
             </div>
+            <div class="copy-filter-block inline-filter">
+              <div class="copy-filter-title">Still getting ads? Use our custom filter list.</div>
+              <div class="filter-code" id="filterCode" title="Click to copy">
+                https://raw.githubusercontent.com/Lep255/memetv/refs/heads/main/memetv-filter.txt
+                <span class="filter-copy" id="filterCopy">📋 Copy</span>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
@@ -1016,8 +1409,8 @@
           }
         ` : `
           query ($search: String) {
-            Page(page: 1, perPage: 5) {
-              media(search: $search, type: ANIME, sort: SEARCH_MATCH) {
+            Page(page: 1, perPage: 10) {
+              media(search: $search, type: ANIME, sort: POPULARITY_DESC) {
                 id
                 episodes
                 format
@@ -1552,5 +1945,27 @@
       renderHistory();
     })();
   </script>
+
+<script>
+(function(){
+  const block = document.getElementById('filterCode');
+  const copy = document.getElementById('filterCopy');
+  const text = 'https://raw.githubusercontent.com/Lep255/memetv/refs/heads/main/memetv-filter.txt';
+
+  if (!block || !copy) return;
+
+  block.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      copy.textContent = '✓ Copied!';
+      setTimeout(() => copy.textContent = '📋 Copy', 1800);
+    } catch (e) {
+      copy.textContent = 'Copy failed';
+      setTimeout(() => copy.textContent = '📋 Copy', 1800);
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
