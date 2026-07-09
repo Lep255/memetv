@@ -1,1 +1,69 @@
+[Adblock Plus 2.0]
 
+! MemeTV Custom Filter List
+! Author: Rodney Hernandez
+! Version: 1.0
+! Last Updated: 2026-07-09
+
+! ==========================
+! ALLOW REQUIRED VIDEO HOSTS
+! ==========================
+
+@@||vidnest.fun^
+@@||new.vidnest.fun^
+@@||megacloud.animanga.fun^
+@@||cdn.mewstream.buzz^
+
+! Optional (required by player)
+@@||cdn.jsdelivr.net^
+
+! AniList API
+@@||graphql.anilist.co^
+
+! ==========================
+! KNOWN POPUP / REDIRECTS
+! ==========================
+
+||old-pine-b112.vidnees.workers.dev^
+||lathi.cothonhitless.cfd^
+||barnard.fromfallalsqueeze.cyou^
+||kafka.nowhereprowler.qpon^
+||devilyquondam.cyou^
+
+! popup behaviour
+||old-pine-b112.vidnees.workers.dev^$popup
+||lathi.cothonhitless.cfd^$popup
+||barnard.fromfallalsqueeze.cyou^$popup
+||kafka.nowhereprowler.qpon^$popup
+||devilyquondam.cyou^$popup
+
+! iframe injection
+||old-pine-b112.vidnees.workers.dev^$subdocument
+||lathi.cothonhitless.cfd^$subdocument
+||barnard.fromfallalsqueeze.cyou^$subdocument
+||kafka.nowhereprowler.qpon^$subdocument
+||devilyquondam.cyou^$subdocument
+
+! injected scripts
+||old-pine-b112.vidnees.workers.dev^$script
+||lathi.cothonhitless.cfd^$script
+||barnard.fromfallalsqueeze.cyou^$script
+||kafka.nowhereprowler.qpon^$script
+||devilyquondam.cyou^$script
+
+! ==========================
+! OPTIONAL ANALYTICS
+! ==========================
+
+||googletagmanager.com^
+||static.cloudflareinsights.com^
+
+! ==========================
+! CLEANUP
+! ==========================
+
+vidnest.fun##iframe[src*="old-pine-b112.vidnees.workers.dev"]
+vidnest.fun##iframe[src*="lathi.cothonhitless.cfd"]
+vidnest.fun##iframe[src*="barnard.fromfallalsqueeze.cyou"]
+vidnest.fun##iframe[src*="kafka.nowhereprowler.qpon"]
+vidnest.fun##iframe[src*="devilyquondam.cyou"]
