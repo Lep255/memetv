@@ -1615,6 +1615,8 @@ color:#fff;
         const name = tvDisplayName(details);
 
         tvId.value = details.id;
+        localStorage.setItem("lastTvSeason", "1");
+        localStorage.setItem("lastTvEpisode", "1");
         tvMetaCache[details.id] = {
           name,
           image: tmdbImage(details.poster_path),
@@ -1622,8 +1624,8 @@ color:#fff;
           seasons: details.seasons || []
         };
 
-        populateTvSeasons(details, localStorage.getItem("lastTvSeason") || "1");
-        await populateTvEpisodes(details.id, tvSeason.value, localStorage.getItem("lastTvEpisode") || "1");
+        populateTvSeasons(details, "1");
+        await populateTvEpisodes(details.id, tvSeason.value, "1");
 
         updateSelectedTvCard(details.id);
         tvSearch.value = name;
