@@ -175,7 +175,14 @@
   </style>
 </head>
 
+
 <body>
+  <div style="width:min(1320px,100%);margin:0 auto 14px auto;padding:12px 16px;background:#151722;border:1px solid #2b2f40;border-radius:18px;color:#d9dcef;font-size:16px;">
+    <strong>Recommended adblockers for videos:</strong>
+    <span style="margin-left:10px;">AdBlock</span>
+    <span style="margin-left:18px;">uBlock Origin</span>
+  </div>
+
   <main class="app">
     <section class="player panel">
       <div class="header">
@@ -204,13 +211,12 @@
         <input id="animeId" type="text" inputmode="numeric" placeholder="Anime ID">
 
         <label for="animeEpisode">Episode Number</label>
-        <input id="animeEpisode" type="text" inputmode="numeric" placeholder="Episode">
+        <input id="animeEpisode" type="number" min="1" step="1" value="1" placeholder="Episode">
 
         <label for="animeType">Sub / Dub</label>
         <select id="animeType">
           <option value="sub">Sub</option>
           <option value="dub">Dub</option>
-          <option value="hindi">Hindi</option>
         </select>
       </section>
 
@@ -219,13 +225,12 @@
         <input id="animepaheId" type="text" inputmode="numeric" placeholder="AnimePahe Anime ID">
 
         <label for="animepaheEpisode">Episode Number</label>
-        <input id="animepaheEpisode" type="text" inputmode="numeric" placeholder="Episode">
+        <input id="animepaheEpisode" type="number" min="1" step="1" value="1" placeholder="Episode">
 
         <label for="animepaheType">Sub / Dub</label>
         <select id="animepaheType">
           <option value="sub">Sub</option>
           <option value="dub">Dub</option>
-          <option value="hindi">Hindi</option>
         </select>
       </section>
 
@@ -239,10 +244,10 @@
         <input id="tvId" type="text" inputmode="numeric" placeholder="TV Show ID">
 
         <label for="tvSeason">Season</label>
-        <input id="tvSeason" type="text" inputmode="numeric" placeholder="Season">
+        <input id="tvSeason" type="number" min="1" step="1" value="1" placeholder="Season">
 
         <label for="tvEpisode">Episode</label>
-        <input id="tvEpisode" type="text" inputmode="numeric" placeholder="Episode">
+        <input id="tvEpisode" type="number" min="1" step="1" value="1" placeholder="Episode">
       </section>
 
       <button id="loadBtn">Load Anime</button>
@@ -252,7 +257,12 @@
         <button id="nextBtn" class="small">Next</button>
       </div>
 
-      <div class="hint">No default IDs are loaded. The player only loads after you press Load.</div>
+      
+<div class="hint">
+  <strong style="display:block;margin-bottom:8px;color:#b7f7ff;">History</strong>
+  <div id="historyList" style="max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+
     </aside>
   </main>
 
@@ -286,9 +296,13 @@
     return String(value || "").replace(/[^\d]/g, "");
   }
 
+  function cleanMinOne(value) {
+    const number = Number(cleanNum(value) || "1");
+    return String(Math.max(1, number));
+  }
+
   function requireValue(input, label) {
-    const value = cleanNum(input.value);
-    input.value = value;
+    let value = cleanNum(input.value);
 
     if (!value) {
       alert(`Please enter ${label}.`);
@@ -296,6 +310,11 @@
       return "";
     }
 
+    if (/episode|season/i.test(label)) {
+      value = cleanMinOne(value);
+    }
+
+    input.value = value;
     return value;
   }
 
@@ -355,18 +374,18 @@
     mode = localStorage.getItem("lastMode") || "anime";
 
     animeId.value = localStorage.getItem("lastAnimeId") || "";
-    animeEpisode.value = localStorage.getItem("lastAnimeEpisode") || "";
+    animeEpisode.value = localStorage.getItem("lastAnimeEpisode") || "1";
     animeType.value = localStorage.getItem("lastAnimeType") || "sub";
 
     animepaheId.value = localStorage.getItem("lastAnimepaheId") || "";
-    animepaheEpisode.value = localStorage.getItem("lastAnimepaheEpisode") || "";
+    animepaheEpisode.value = localStorage.getItem("lastAnimepaheEpisode") || "1";
     animepaheType.value = localStorage.getItem("lastAnimepaheType") || "sub";
 
     movieId.value = localStorage.getItem("lastMovieId") || "";
 
     tvId.value = localStorage.getItem("lastTvId") || "";
-    tvSeason.value = localStorage.getItem("lastTvSeason") || "";
-    tvEpisode.value = localStorage.getItem("lastTvEpisode") || "";
+    tvSeason.value = localStorage.getItem("lastTvSeason") || "1";
+    tvEpisode.value = localStorage.getItem("lastTvEpisode") || "1";
   }
 
   function setMode(nextMode) {
@@ -426,25 +445,26 @@
     }
 
     saveValues();
+    addHistory(currentHistoryItem(url));
   }
 
   function changeEpisode(amount) {
     if (mode === "anime") {
-      const current = Number(cleanNum(animeEpisode.value) || "1");
+      const current = Number(cleanMinOne(animeEpisode.value));
       animeEpisode.value = String(Math.max(1, current + amount));
       loadMedia();
       return;
     }
 
     if (mode === "animepahe") {
-      const current = Number(cleanNum(animepaheEpisode.value) || "1");
+      const current = Number(cleanMinOne(animepaheEpisode.value));
       animepaheEpisode.value = String(Math.max(1, current + amount));
       loadMedia();
       return;
     }
 
     if (mode === "tv") {
-      const current = Number(cleanNum(tvEpisode.value) || "1");
+      const current = Number(cleanMinOne(tvEpisode.value));
       tvEpisode.value = String(Math.max(1, current + amount));
       loadMedia();
     }
@@ -464,8 +484,53 @@
     });
   });
 
+
+function addHistory(url,label){
+  const key="vidnestHistory";
+  let items=[];
+  try{items=JSON.parse(localStorage.getItem(key)||"[]");}catch{}
+  items=items.filter(i=>i.url!==url);
+  items.unshift({url,label});
+  items=items.slice(0,20);
+  localStorage.setItem(key,JSON.stringify(items));
+  renderHistory();
+}
+
+function renderHistory(){
+  const box=document.getElementById("historyList");
+  if(!box)return;
+  box.innerHTML="";
+  let items=[];
+  try{items=JSON.parse(localStorage.getItem("vidnestHistory")||"[]");}catch{}
+  if(!items.length){
+    box.innerHTML='<div style="color:#aaa;">No history yet.</div>';
+    return;
+  }
+  items.forEach(item=>{
+    const b=document.createElement("button");
+    b.className="small";
+    b.style.margin="0";
+    b.style.textAlign="left";
+    b.textContent=item.label;
+    b.onclick=()=>{player.src=item.url;empty.classList.add("hidden");meta.textContent=item.label;};
+    box.appendChild(b);
+  });
+}
+
+
+  document.querySelectorAll('input[type="number"]').forEach(input => {
+    input.addEventListener("input", () => {
+      if (Number(input.value) < 1) input.value = "1";
+    });
+
+    input.addEventListener("blur", () => {
+      input.value = cleanMinOne(input.value);
+    });
+  });
+
   loadSavedValues();
   setMode(mode);
+  renderHistory();
 })();
 </script>
 </body>
