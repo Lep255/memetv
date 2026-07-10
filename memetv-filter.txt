@@ -1,8 +1,9 @@
 [Adblock Plus 2.0]
 
-! Title: MemeTV Official Filters
+! Rodney Custom AdBlock Filter List
 ! Expires: 1 day
 
+! Required domains
 @@||vidnest.fun^
 @@||new.vidnest.fun^
 @@||megacloud.animanga.fun^
@@ -10,19 +11,24 @@
 @@||graphql.anilist.co^
 @@||cdn.jsdelivr.net^
 
+! Known popup / redirect domains
 ||old-pine-b112.vidnees.workers.dev^
 ||lathi.cothonhitless.cfd^
 ||barnard.fromfallalsqueeze.cyou^
 ||kafka.nowhereprowler.qpon^
 ||devilyquondam.cyou^
-||new.vidnest.fun^
-||vidnest.fun^
 
+! Known advertising domains
+||artworks.thetvdb.com^
+
+! Trackers
 ||googletagmanager.com^
 ||static.cloudflareinsights.com^
 
+! Cosmetic cleanup
 vidnest.fun##iframe[src*="old-pine-b112.vidnees.workers.dev"]
 vidnest.fun##iframe[src*="lathi.cothonhitless.cfd"]
 vidnest.fun##iframe[src*="barnard.fromfallalsqueeze.cyou"]
 vidnest.fun##iframe[src*="kafka.nowhereprowler.qpon"]
 vidnest.fun##iframe[src*="devilyquondam.cyou"]
+vidnest.fun##iframe[src*="artworks.thetvdb.com"]
