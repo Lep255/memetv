@@ -15,6 +15,8 @@
 ||barnard.fromfallalsqueeze.cyou^
 ||kafka.nowhereprowler.qpon^
 ||devilyquondam.cyou^
+||new.vidnest.fun^
+||vidnest.fun^
 
 ||googletagmanager.com^
 ||static.cloudflareinsights.com^
