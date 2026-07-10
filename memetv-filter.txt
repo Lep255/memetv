@@ -14,7 +14,6 @@
 ||hai8g.com^
 ||old-pine-b112.vidnees.workers.dev^
 ||tm.ecologystoter.com^
-||googletagmanager.com^
 ||static.cloudflareinsights.com^
 ||my.rtmark.net^
 ||luugy.com^
