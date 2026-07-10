@@ -10,11 +10,11 @@
 @@||upcloud.animanga.fun^
 @@||cdn.mewstream.buzz^
 @@||cdn.jsdelivr.net^
+@@||artworks.thetvdb.com^
 
 ! Known ad / popup / tracker domains
 ||old-pine-b112.vidnees.workers.dev^
 ||tm.ecologystoter.com^
-||artworks.thetvdb.com^
 ||googletagmanager.com^
 ||static.cloudflareinsights.com^
 
