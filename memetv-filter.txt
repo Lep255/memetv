@@ -1,9 +1,13 @@
 [Adblock Plus 2.0]
 
 ! Title: MemeTV Official Filters
+! Version: 1.2.0
 ! Expires: 1 day
 
+! =========================
 ! Required video/player domains
+! =========================
+
 @@||vidnest.fun^
 @@||new.vidnest.fun^
 @@||megacloud.animanga.fun^
@@ -11,19 +15,47 @@
 @@||cdn.mewstream.buzz^
 @@||cdn.jsdelivr.net^
 @@||artworks.thetvdb.com^
+@@||graphql.anilist.co^
 
-! Known ad / popup / tracker domains
+! =========================
+! Known popup / ad domains
+! =========================
+
+||hai8g.com^
 ||old-pine-b112.vidnees.workers.dev^
 ||tm.ecologystoter.com^
+
+! =========================
+! Analytics / tracking
+! =========================
+
 ||googletagmanager.com^
 ||static.cloudflareinsights.com^
 
+! =========================
 ! Cosmetic cleanup
+! =========================
+
 vidnest.fun##iframe[src*="old-pine-b112.vidnees.workers.dev"]
-vidnest.fun##iframe[src*="artworks.thetvdb.com"]
+vidnest.fun##iframe[src*="tm.ecologystoter.com"]
+
 vidnest.fun##[class*="ads"]
 vidnest.fun##[id*="ads"]
+
 vidnest.fun##[class*="banner"]
 vidnest.fun##[id*="banner"]
+
 vidnest.fun##[class*="popup"]
 vidnest.fun##[id*="popup"]
+
+vidnest.fun##[class*="advert"]
+vidnest.fun##[id*="advert"]
+
+vidnest.fun##[class*="sponsor"]
+vidnest.fun##[id*="sponsor"]
+
+vidnest.fun##[class*="overlay"]
+vidnest.fun##[id*="overlay"]
+
+! Hide common click-under overlays
+vidnest.fun##a[target="_blank"][rel="noopener"]
