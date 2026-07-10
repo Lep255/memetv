@@ -16,6 +16,8 @@
 ||tm.ecologystoter.com^
 ||googletagmanager.com^
 ||static.cloudflareinsights.com^
+||my.rtmark.net^
+||luugy.com^
 
 vidnest.fun##iframe[src*="old-pine-b112.vidnees.workers.dev"]
 vidnest.fun##[class*="ads"]
