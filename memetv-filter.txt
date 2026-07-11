@@ -8,17 +8,22 @@
 
 
 ! ============================================================
-! Allow Required Video/CDN Domains
+! REQUIRED VIDEO / CDN
 ! ============================================================
 
 @@||tryembed.us.cc^
+
 @@||vidnest.fun^
 @@||new.vidnest.fun^
+
 @@||vidcore.net^
+
 @@||vidfast.vc^
 
 @@||megacloud.animanga.fun^
 @@||upcloud.animanga.fun^
+
+@@||bigf.imostatic.com^
 @@||moon.ironbubble.site^
 @@||prohe.anixx.cloud^
 @@||luugy.com^
@@ -31,55 +36,77 @@
 @@||fonts.gstatic.com^
 
 
+
 ! ============================================================
-! Global Analytics / Telemetry
+! GLOBAL TRACKERS
 ! ============================================================
 
 ||googletagmanager.com^
+
 ||static.cloudflareinsights.com^
 
 ||status.anixtv.pro^
-||status.anixtv.pro/api/send
+||status.anixtv.pro/api/send^
 
 ||umami.vidcore.net^
 ||umami.vidfast.vc^
 
 
+
 ! ============================================================
-! TryEmbed Ad Network
+! KNOWN AD NETWORKS
 ! ============================================================
+
+||old-pine-b112.vidnees.workers.dev^
+
+||tm.ecologystoter.com^
 
 ||ab.shticksmazut.com^
 
+||je.deuxseethe.com^
+
+
+
+! ============================================================
+! ROTATING TRACKERS
+! ============================================================
+
 ||unknits.ionisersnitz.cyou^
+
 ||devilyquondam.cyou^
+
 ||hydride.haresteels.cyou^
+
 ||warms.spatlumyawyreputes.cyou^
 
 ||mateleycranker.cfd^
 
-||je.deuxseethe.com^
-
 ||4nh.92qiwk6tyuwnyx.cfd^
+
 ||kxt7umt8bwnx7x7u.jvve6uvwcozj1yvk.rest^
 
 
+
 ! ============================================================
-! Popup / Beacon Blocking
+! BLOCK COMMON TELEMETRY
 ! ============================================================
 
-||*.cyou^$popup
 ||*.cyou^$beacon
+||*.cyou^$ping
+||*.cyou^$popup
 
-||*.cfd^$popup
 ||*.cfd^$beacon
+||*.cfd^$ping
+||*.cfd^$popup
 
-||*.rest^$popup
 ||*.rest^$beacon
+||*.rest^$ping
+||*.rest^$popup
+
 
 
 ! ============================================================
-! TryEmbed Cosmetic Cleanup
+! TRyEMBED CLEANUP
 ! ============================================================
 
 tryembed.us.cc##iframe[src*="shticksmazut"]
@@ -88,38 +115,43 @@ tryembed.us.cc##iframe[src*="haresteels"]
 tryembed.us.cc##iframe[src*="spatlumyawyreputes"]
 tryembed.us.cc##iframe[src*="mateleycranker"]
 
-tryembed.us.cc##form[action*="mateleycranker"]
 tryembed.us.cc##form[action*="ionisersnitz"]
 tryembed.us.cc##form[action*="haresteels"]
 tryembed.us.cc##form[action*="spatlumyawyreputes"]
+tryembed.us.cc##form[action*="mateleycranker"]
 
-tryembed.us.cc##[class*="popup"]
-tryembed.us.cc##[id*="popup"]
-
-tryembed.us.cc##[class*="ads"]
-tryembed.us.cc##[id*="ads"]
 
 
 ! ============================================================
-! VidNest Cosmetic Cleanup
+! VIDNEST CLEANUP
 ! ============================================================
 
-vidnest.fun##iframe[src*="googletagmanager"]
-vidnest.fun##iframe[src*="cloudflareinsights"]
+vidnest.fun##iframe[src*="old-pine-b112"]
+vidnest.fun##iframe[src*="ecologystoter"]
+vidnest.fun##iframe[src*="ionisersnitz"]
+vidnest.fun##iframe[src*="haresteels"]
+vidnest.fun##iframe[src*="spatlumyawyreputes"]
+
+vidnest.fun##form[action*="old-pine-b112"]
+vidnest.fun##form[action*="ecologystoter"]
+vidnest.fun##form[action*="haresteels"]
+vidnest.fun##form[action*="spatlumyawyreputes"]
+
 
 
 ! ============================================================
-! VidCore Cosmetic Cleanup
+! VIDCORE CLEANUP
 ! ============================================================
 
 vidcore.net##iframe[src*="googletagmanager"]
 vidcore.net##iframe[src*="cloudflareinsights"]
-vidcore.net##iframe[src*="je.deuxseethe"]
 vidcore.net##iframe[src*="umami"]
+vidcore.net##iframe[src*="deuxseethe"]
+
 
 
 ! ============================================================
-! VidFast Cosmetic Cleanup
+! VIDFAST CLEANUP
 ! ============================================================
 
 vidfast.vc##iframe[src*="googletagmanager"]
@@ -129,25 +161,30 @@ vidfast.vc##iframe[src*="92qiwk6tyuwnyx"]
 vidfast.vc##iframe[src*=".rest"]
 
 
+
 ! ============================================================
-! Generic Popup Cleanup
+! GENERIC POPUP CLEANUP
 ! ============================================================
 
 ##iframe[src*="googletagmanager"]
 ##iframe[src*="cloudflareinsights"]
 
+##iframe[src*="old-pine-b112"]
+##iframe[src*="ecologystoter"]
 ##iframe[src*="ionisersnitz"]
 ##iframe[src*="haresteels"]
 ##iframe[src*="spatlumyawyreputes"]
 ##iframe[src*="mateleycranker"]
-##iframe[src*="shticksmazut"]
 
-##form[action*="mateleycranker"]
+##form[action*="old-pine-b112"]
+##form[action*="ecologystoter"]
 ##form[action*="ionisersnitz"]
 ##form[action*="haresteels"]
 ##form[action*="spatlumyawyreputes"]
+##form[action*="mateleycranker"]
 
 ##[class*="popup"]
 ##[id*="popup"]
+
 ##[class*="ads"]
 ##[id*="ads"]
