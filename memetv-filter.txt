@@ -1,36 +1,153 @@
-:::writing{variant="standard" id="48317"}
 [Adblock Plus 2.0]
 
-! Title: MemeTV Official Filters
+! ============================================================
+! MemeTV Official Filter List
+! Updated: 2026-07-11
 ! Expires: 1 day
+! ============================================================
+
+
+! ============================================================
+! Allow Required Video/CDN Domains
+! ============================================================
 
 @@||tryembed.us.cc^
+@@||vidnest.fun^
+@@||new.vidnest.fun^
+@@||vidcore.net^
+@@||vidfast.vc^
+
+@@||megacloud.animanga.fun^
+@@||upcloud.animanga.fun^
+@@||moon.ironbubble.site^
 @@||prohe.anixx.cloud^
+@@||luugy.com^
+@@||bcdn.hakunaymatata.com^
+
 @@||vjs.zencdn.net^
 @@||cdn.jsdelivr.net^
+
 @@||fonts.googleapis.com^
 @@||fonts.gstatic.com^
 
+
+! ============================================================
+! Global Analytics / Telemetry
+! ============================================================
+
+||googletagmanager.com^
+||static.cloudflareinsights.com^
+
+||status.anixtv.pro^
+||status.anixtv.pro/api/send
+
+||umami.vidcore.net^
+||umami.vidfast.vc^
+
+
+! ============================================================
+! TryEmbed Ad Network
+! ============================================================
+
 ||ab.shticksmazut.com^
+
 ||unknits.ionisersnitz.cyou^
 ||devilyquondam.cyou^
 ||hydride.haresteels.cyou^
 ||warms.spatlumyawyreputes.cyou^
-||bs.stoitercoppin.cfd^
-||hy.shibahsjessing.qpon^
-||static.cloudflareinsights.com^
-||status.anixtv.pro^
+
+||mateleycranker.cfd^
+
+||je.deuxseethe.com^
+
+||4nh.92qiwk6tyuwnyx.cfd^
+||kxt7umt8bwnx7x7u.jvve6uvwcozj1yvk.rest^
+
+
+! ============================================================
+! Popup / Beacon Blocking
+! ============================================================
+
+||*.cyou^$popup
+||*.cyou^$beacon
+
+||*.cfd^$popup
+||*.cfd^$beacon
+
+||*.rest^$popup
+||*.rest^$beacon
+
+
+! ============================================================
+! TryEmbed Cosmetic Cleanup
+! ============================================================
 
 tryembed.us.cc##iframe[src*="shticksmazut"]
 tryembed.us.cc##iframe[src*="ionisersnitz"]
 tryembed.us.cc##iframe[src*="haresteels"]
 tryembed.us.cc##iframe[src*="spatlumyawyreputes"]
-tryembed.us.cc##iframe[src*="stoitercoppin"]
-tryembed.us.cc##iframe[src*="shibahsjessing"]
-tryembed.us.cc##form[action*="stoitercoppin"]
-tryembed.us.cc##form[action*="shibahsjessing"]
-tryembed.us.cc##[class*="ads"]
-tryembed.us.cc##[id*="ads"]
+tryembed.us.cc##iframe[src*="mateleycranker"]
+
+tryembed.us.cc##form[action*="mateleycranker"]
+tryembed.us.cc##form[action*="ionisersnitz"]
+tryembed.us.cc##form[action*="haresteels"]
+tryembed.us.cc##form[action*="spatlumyawyreputes"]
+
 tryembed.us.cc##[class*="popup"]
 tryembed.us.cc##[id*="popup"]
-:::
+
+tryembed.us.cc##[class*="ads"]
+tryembed.us.cc##[id*="ads"]
+
+
+! ============================================================
+! VidNest Cosmetic Cleanup
+! ============================================================
+
+vidnest.fun##iframe[src*="googletagmanager"]
+vidnest.fun##iframe[src*="cloudflareinsights"]
+
+
+! ============================================================
+! VidCore Cosmetic Cleanup
+! ============================================================
+
+vidcore.net##iframe[src*="googletagmanager"]
+vidcore.net##iframe[src*="cloudflareinsights"]
+vidcore.net##iframe[src*="je.deuxseethe"]
+vidcore.net##iframe[src*="umami"]
+
+
+! ============================================================
+! VidFast Cosmetic Cleanup
+! ============================================================
+
+vidfast.vc##iframe[src*="googletagmanager"]
+vidfast.vc##iframe[src*="cloudflareinsights"]
+vidfast.vc##iframe[src*="umami"]
+vidfast.vc##iframe[src*="92qiwk6tyuwnyx"]
+vidfast.vc##iframe[src*=".rest"]
+
+
+! ============================================================
+! Generic Popup Cleanup
+! ============================================================
+
+##iframe[src*="googletagmanager"]
+##iframe[src*="cloudflareinsights"]
+
+##iframe[src*="ionisersnitz"]
+##iframe[src*="haresteels"]
+##iframe[src*="spatlumyawyreputes"]
+##iframe[src*="mateleycranker"]
+##iframe[src*="shticksmazut"]
+
+##form[action*="mateleycranker"]
+##form[action*="ionisersnitz"]
+##form[action*="haresteels"]
+##form[action*="spatlumyawyreputes"]
+
+##[class*="popup"]
+##[id*="popup"]
+##[class*="ads"]
+##[id*="ads"]
