@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MemeTV</title>
+  <link rel="icon" type="image/png" href="assets/icons/favicon.png">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/navigation.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="pirate-navbar">
+      <div class="brand-stage" aria-label="MemeTV">
+        <img class="nav-wordmark" src="assets/logo/memetv-wordmark.png" alt="MemeTV">
+      </div>
+
+      <nav class="main-menu" aria-label="MemeTV sections">
+        <button class="menu-button active" type="button" data-mode="anime">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5V4Zm2 2v12h10V6H7Zm2 2h6v2H9V8Zm0 4h6v2H9v-2Z"/></svg>
+          Anime
+        </button>
+        <button class="menu-button" type="button" data-mode="movie">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v13H4V6Zm2 2v9h12V8H6ZM5 3h4l2 2H7L5 3Zm7 0h4l2 2h-4l-2-2Z"/></svg>
+          Movies
+        </button>
+        <button class="menu-button" type="button" data-mode="tv">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10l-3 3h5v13H5V6h5L7 3Zm0 5v9h10V8H7Z"/></svg>
+          TV Shows
+        </button>
+        <button class="menu-button utility-button" id="historyMenuButton" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a7 7 0 1 1-6.2 3.7L3 11V4h7L7.2 6.3A9 9 0 1 0 12 3v2Zm-1 3h2v5l4 2-1 1.7-5-2.7V8Z"/></svg>
+          History
+        </button>
+
+        <div class="todo-wrap nav-todo-wrap" id="todoWrap">
+          <button class="menu-button utility-button" id="todoButton" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6V3Zm8 1.8V7h2.2L14 4.8ZM8 9h8v1.6H8V9Zm0 3.5h8v1.6H8v-1.6Zm0 3.5h5v1.6H8V16Z"/></svg>
+            To Do
+          </button>
+          <div class="todo-dropdown nav-dropdown" id="todoDropdown">
+            <div class="todo-head">Pending</div>
+            <div id="todoList" class="todo-list">Loading...</div>
+          </div>
+        </div>
+      </nav>
+
+    </header>
+
+    
+<div class="legacy-controls" aria-hidden="true">
+  <select id="mediaMode">
+    <option value="anime" selected>Anime</option>
+    <option value="movie">Movies</option>
+    <option value="tv">TV Shows</option>
+  </select>
+  <div class="custom-select" id="mediaModeCustom">
+    <button class="custom-select-button" id="mediaModeButton" type="button">Anime</button>
+    <div class="custom-select-menu">
+      <button class="custom-option active" type="button" data-value="anime">Anime</button>
+      <button class="custom-option" type="button" data-value="movie">Movies</button>
+      <button class="custom-option" type="button" data-value="tv">TV Shows</button>
+    </div>
+  </div>
+</div>
+
+
+    <main class="app-grid">
+      <section id="contentColumn" class="content-column">
+        <div class="panel player-card">
+          <div class="player-shell">
+            <div class="player-overlay-title">
+              <h1 id="videoTitle">MemeTV</h1>
+              <div id="meta">Search and select something to begin.</div>
+            </div>
+            <div class="iframe-wrap">
+              <iframe id="player" title="Video Player" allowfullscreen referrerpolicy="no-referrer"></iframe>
+              <div id="empty" class="empty">
+                <div class="empty-state">
+                  <img src="assets/characters/albedo-watching-one-piece.png" alt="Pirate Albedo watching One Piece on television">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <section id="playbackControls" class="playback-controls panel" aria-label="Episode controls"></section>
+
+        <div id="serverPanel" class="server-panel" hidden>
+          <div class="server-copy">
+            <div class="server-panel-label">
+              <svg class="server-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 4h16v6H4V4Zm2 2v2h2V6H6Zm-2 8h16v6H4v-6Zm2 2v2h2v-2H6Zm5-10h7v2h-7V6Zm0 10h7v2h-7v-2Z"/>
+              </svg>
+              Servers
+            </div>
+            <div class="server-help">Your video isn't loading? Try another server.</div>
+          </div>
+
+          <div class="server-buttons" role="group" aria-label="Video server">
+            <button class="server-button active" type="button" data-server="vidnest">Srv1</button>
+            <button class="server-button" type="button" data-server="vidcore">Srv2</button>
+            <button class="server-button" type="button" data-server="vidgod">Srv3</button>
+            <button class="server-button" type="button" data-server="vidfast">Srv4</button>
+            <button class="server-button" type="button" data-server="videasy">Srv5</button>
+          </div>
+        </div>
+
+        
+        <div class="adblock-banner">
+          <svg class="shield-icon" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M32 3 8 13v16c0 15 9.5 27.5 24 32 14.5-4.5 24-17 24-32V13L32 3Zm0 6.5 18 7.5v12c0 11.2-6.7 21.6-18 25.5C20.7 50.6 14 40.2 14 29V17l18-7.5Z"/>
+            <path d="M32 17a3 3 0 0 0-3 3c0 1.1.6 2.1 1.5 2.6V26h-5v-3h-3v8h3v-2h5v10.7a8 8 0 0 1-6.3-5.2h3v-3h-7v7h3v-1.2A11 11 0 0 0 30.5 43v2h3v-2a11 11 0 0 0 7.3-5.7v1.2h3v-7h-7v3h3a8 8 0 0 1-6.3 5.2V29h5v2h3v-8h-3v3h-5v-3.4A3 3 0 0 0 32 17Z"/>
+          </svg>
+
+          <div>
+            <div class="adblock-title">
+              <span>Recommended AdBlockers:</span>
+              <span class="adblock-brand">
+                <svg class="adblock-svg" viewBox="0 0 64 64" aria-hidden="true">
+                  <path d="M32 3 9 12v17c0 15.5 9.4 27.2 23 32 13.6-4.8 23-16.5 23-32V12L32 3Z" fill="#e43b3b"/>
+                  <path d="M23 17h18l6 6v18l-6 6H23l-6-6V23l6-6Z" fill="#fff"/>
+                  <path d="M25 24h6v19h-6V24Zm8 0h6v19h-6V24Z" fill="#e43b3b"/>
+                </svg>
+                AdBlock
+              </span>
+              <span class="adblock-brand">
+                <svg class="adblock-svg" viewBox="0 0 64 64" aria-hidden="true">
+                  <path d="M32 3 9 12v17c0 15.5 9.4 27.2 23 32 13.6-4.8 23-16.5 23-32V12L32 3Z" fill="#8f151a"/>
+                  <text x="32" y="39" text-anchor="middle" font-size="21" font-family="Arial, sans-serif" font-weight="900" fill="#fff">uB</text>
+                </svg>
+                uBlock Origin
+              </span>
+            </div>
+            <div class="adblock-note">
+              This page does not bring ads. If you are getting ads, it's due to the video player. Make sure to keep your ad blockers updated.
+            </div>
+            <div class="copy-filter-block inline-filter">
+              <div class="copy-filter-title">Still getting ads? Use our custom filter list.</div>
+              <div class="filter-code" id="filterCode" title="Click to copy">
+                https://raw.githubusercontent.com/Lep255/memetv/refs/heads/main/memetv-filter.txt
+                <span class="filter-copy" id="filterCopy">📋 Copy</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      
+      </section>
+
+      <aside class="panel control-sidebar">
+        <div class="sidebar-heading">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a2 2 0 0 0-2 2c0 .74.4 1.39 1 1.73V8H7V6H5v5h2V9h4v8.7A6.5 6.5 0 0 1 5.6 13H8v-2H3v5h2v-1.2A8.5 8.5 0 0 0 11 20.94V22h2v-1.06a8.5 8.5 0 0 0 6-6.14V16h2v-5h-5v2h2.4a6.5 6.5 0 0 1-5.4 4.7V9h4v2h2V6h-2v2h-4V5.73A2 2 0 0 0 12 2Z"/></svg>
+          <span id="sidebarTitle">Anime</span>
+        </div>
+
+        <div class="sidebar-scroll">
+          <div id="animeSearchBox" class="search-wrap">
+          <label for="animeSearch">Search AniList Anime</label>
+          <input id="animeSearch" type="text" placeholder="Search anime name or AniList ID...">
+          <div id="searchResults" class="results dropdown-results"></div>
+
+          <div id="selectedAnimeCard" class="selected-anime">
+            <img id="selectedAnimeImage" alt="">
+            <div>
+              <div id="selectedAnimeName" class="selected-name"></div>
+              <div id="selectedAnimeMeta" class="selected-meta"></div>
+            </div>
+            <button id="clearSelectedAnime" class="clear-selected" type="button">×</button>
+          </div>
+        </div>
+
+        <div id="movieSearchBox" class="search-wrap tmdb-search-box" style="display:none;">
+          <label for="movieSearch">Search TMDB Movies</label>
+          <input id="movieSearch" type="text" placeholder="Search movie name or TMDB ID...">
+          <div id="movieResults" class="results dropdown-results"></div>
+
+          <div id="selectedMovieCard" class="selected-anime">
+            <img id="selectedMovieImage" alt="">
+            <div>
+              <div id="selectedMovieName" class="selected-name"></div>
+              <div id="selectedMovieMeta" class="selected-meta"></div>
+            </div>
+            <button id="clearSelectedMovie" class="clear-selected" type="button">×</button>
+          </div>
+        </div>
+
+        <div id="tvSearchBox" class="search-wrap tmdb-search-box" style="display:none;">
+          <label for="tvSearch">Search TMDB TV Shows</label>
+          <input id="tvSearch" type="text" placeholder="Search TV show name or TMDB ID...">
+          <div id="tvResults" class="results dropdown-results"></div>
+
+          <div id="selectedTvCard" class="selected-anime">
+            <img id="selectedTvImage" alt="">
+            <div>
+              <div id="selectedTvName" class="selected-name"></div>
+              <div id="selectedTvMeta" class="selected-meta"></div>
+            </div>
+            <button id="clearSelectedTv" class="clear-selected" type="button">×</button>
+          </div>
+        </div>
+
+        <section id="animeForm" class="form-section active">
+          <input id="animeId" type="hidden">
+
+          <div class="episode-grid">
+            <div>
+              <label for="animeEpisode">Episode</label>
+              <select id="animeEpisode">
+                <option value="1">Episode 1</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="animeType">Sub / Dub</label>
+              <select id="animeType">
+                <option value="sub">SUB</option>
+                <option value="dub">DUB</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section id="animepaheForm" class="form-section">
+          <input id="animepaheId" type="hidden">
+
+          <div class="episode-grid">
+            <div>
+              <label for="animepaheEpisode">Episode</label>
+              <select id="animepaheEpisode">
+                <option value="1">Episode 1</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="animepaheType">Sub / Dub</label>
+              <select id="animepaheType">
+                <option value="sub">SUB</option>
+                <option value="dub">DUB</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section id="movieForm" class="form-section">
+          <input id="movieId" type="hidden">
+        </section>
+
+        <section id="tvForm" class="form-section">
+          <input id="tvId" type="hidden">
+
+          <div class="episode-grid">
+            <div>
+              <label for="tvSeason">Season</label>
+              <select id="tvSeason">
+                <option value="1">Season 1</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="tvEpisode">Episode</label>
+              <select id="tvEpisode">
+                <option value="1">Episode 1</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        
+          <button id="loadBtn" class="main-button">Refresh/Retry</button>
+
+        <div class="row">
+          <button id="prevBtn" class="small">Previous</button>
+          <button id="nextBtn" class="small">Next</button>
+        </div>
+        
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="historyModal" hidden>
+    <section class="modal-panel history-modal-panel" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle">
+      <div class="modal-heading">
+        <div class="history-title" id="historyModalTitle">
+          <svg class="anchor-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a2 2 0 0 0-2 2c0 .74.4 1.39 1 1.73V8H7V6H5v5h2V9h4v8.7A6.5 6.5 0 0 1 5.6 13H8v-2H3v5h2v-1.2A8.5 8.5 0 0 0 11 20.94V22h2v-1.06a8.5 8.5 0 0 0 6-6.14V16h2v-5h-5v2h2.4a6.5 6.5 0 0 1-5.4 4.7V9h4v2h2V6h-2v2h-4V5.73A2 2 0 0 0 12 2Z"/></svg>
+          History
+        </div>
+        <div class="modal-actions">
+          <button id="clearHistoryBtn" class="clear-history" type="button">Clear History</button>
+          <button id="closeHistoryModal" class="modal-close" type="button" aria-label="Close">×</button>
+        </div>
+      </div>
+      <div id="historyList" class="history-list modal-history-list"></div>
+    </section>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/navigation.js"></script>
+</body>
+</html>
