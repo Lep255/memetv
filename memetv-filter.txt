@@ -1,25 +1,36 @@
+:::writing{variant="standard" id="48317"}
 [Adblock Plus 2.0]
 
 ! Title: MemeTV Official Filters
 ! Expires: 1 day
 
-@@||vidnest.fun^
-@@||new.vidnest.fun^
-@@||megacloud.animanga.fun^
-@@||upcloud.animanga.fun^
-@@||cdn.mewstream.buzz^
+@@||tryembed.us.cc^
+@@||prohe.anixx.cloud^
+@@||vjs.zencdn.net^
 @@||cdn.jsdelivr.net^
-@@||artworks.thetvdb.com^
+@@||fonts.googleapis.com^
+@@||fonts.gstatic.com^
 
-||hai8g.com^
-||old-pine-b112.vidnees.workers.dev^
-||tm.ecologystoter.com^
+||ab.shticksmazut.com^
+||unknits.ionisersnitz.cyou^
+||devilyquondam.cyou^
+||hydride.haresteels.cyou^
+||warms.spatlumyawyreputes.cyou^
+||bs.stoitercoppin.cfd^
+||hy.shibahsjessing.qpon^
 ||static.cloudflareinsights.com^
-||my.rtmark.net^
-||luugy.com^
+||status.anixtv.pro^
 
-vidnest.fun##iframe[src*="old-pine-b112.vidnees.workers.dev"]
-vidnest.fun##[class*="ads"]
-vidnest.fun##[id*="ads"]
-vidnest.fun##[class*="popup"]
-vidnest.fun##[id*="popup"]
+tryembed.us.cc##iframe[src*="shticksmazut"]
+tryembed.us.cc##iframe[src*="ionisersnitz"]
+tryembed.us.cc##iframe[src*="haresteels"]
+tryembed.us.cc##iframe[src*="spatlumyawyreputes"]
+tryembed.us.cc##iframe[src*="stoitercoppin"]
+tryembed.us.cc##iframe[src*="shibahsjessing"]
+tryembed.us.cc##form[action*="stoitercoppin"]
+tryembed.us.cc##form[action*="shibahsjessing"]
+tryembed.us.cc##[class*="ads"]
+tryembed.us.cc##[id*="ads"]
+tryembed.us.cc##[class*="popup"]
+tryembed.us.cc##[id*="popup"]
+:::
