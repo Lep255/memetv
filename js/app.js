@@ -1986,6 +1986,27 @@ if (item.mode === "anime") {
         requestAnimationFrame(syncSidebarHeight);
       });
 
+      // Public bridge used by the Explore catalogue. Keeping the actual
+      // selection inside the established loaders preserves server memory,
+      // episode setup, history, and playback behavior.
+      window.MemeTVApp = {
+        async watchAnime(id) {
+          const anime = await getAniListAnimeById(id);
+          if (!anime) throw new Error("Anime information could not be loaded.");
+          selectAnime(anime, true);
+        },
+        async watchMovie(id) {
+          const movie = await tmdbRequest(`/movie/${id}?language=en-US`);
+          setMode("movie");
+          await selectMovie(movie, true);
+        },
+        async watchTv(id) {
+          const show = await tmdbRequest(`/tv/${id}?language=en-US`);
+          setMode("tv");
+          await selectTvShow(show, true);
+        }
+      };
+
       loadSavedValues();
       setMode(mode);
       ensureValidServerForMode();

@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/navigation.css">
   <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/explore.css?v=78">
   <link rel="stylesheet" href="css/responsive.css">
 </head>
 <body>
@@ -29,6 +30,10 @@
         <button class="menu-button" type="button" data-mode="tv">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10l-3 3h5v13H5V6h5L7 3Zm0 5v9h10V8H7Z"/></svg>
           TV Shows
+        </button>
+        <button class="menu-button utility-button" id="exploreMenuButton" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm3.8 5.2-2.1 6.5-6.5 2.1 2.1-6.5 6.5-2.1Zm-4.7 4.7-.7 2.1 2.1-.7.7-2.1-2.1.7Z"/></svg>
+          Explore
         </button>
         <button class="menu-button utility-button" id="historyMenuButton" type="button">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a7 7 0 1 1-6.2 3.7L3 11V4h7L7.2 6.3A9 9 0 1 0 12 3v2Zm-1 3h2v5l4 2-1 1.7-5-2.7V8Z"/></svg>
@@ -79,7 +84,7 @@
               <iframe id="player" title="Video Player" allowfullscreen referrerpolicy="no-referrer"></iframe>
               <div id="empty" class="empty">
                 <div class="empty-state">
-                  <img src="assets/characters/albedo-watching-one-piece.png" alt="Loading...">
+                  <img src="assets/characters/albedo-watching-one-piece.png" alt="Pirate Albedo watching One Piece on television">
                 </div>
               </div>
             </div>
@@ -282,6 +287,86 @@
         </div>
       </aside>
     </main>
+
+    <section id="exploreView" class="explore-view" hidden aria-labelledby="exploreTitle">
+      <div class="explore-panel panel">
+        <header class="explore-heading">
+          <div>
+            <span class="explore-kicker">Discover your next voyage</span>
+            <h1 id="exploreTitle">Explore</h1>
+          </div>
+          <div class="explore-result-count" id="exploreResultCount">Popular picks</div>
+        </header>
+
+        <div class="explore-filters" aria-label="Catalogue filters">
+          <select id="exploreMedia" aria-label="Media type">
+            <option value="movie">Movies</option>
+            <option value="tv">TV Shows</option>
+            <option value="anime">Anime</option>
+          </select>
+          <select id="exploreRegion" aria-label="Region">
+            <option value="">All regions</option>
+            <option value="US">United States</option>
+            <option value="KR">Korea</option>
+            <option value="TH">Thailand</option>
+            <option value="CN">China</option>
+            <option value="JP">Japan</option>
+            <option value="TW">Taiwan</option>
+            <option value="IN">India</option>
+            <option value="GB">United Kingdom</option>
+            <option value="FR">France</option>
+            <option value="ES">Spain</option>
+            <option value="DE">Germany</option>
+            <option value="BR">Brazil</option>
+            <option value="MX">Mexico</option>
+            <option value="PH">Philippines</option>
+          </select>
+          <select id="exploreYear" aria-label="Release year"><option value="">Any year</option></select>
+          <select id="exploreGenre" aria-label="Genre">
+            <option value="">All genres</option>
+          </select>
+          <select id="exploreSort" aria-label="Sort catalogue">
+            <option value="popular">Most popular</option>
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="rating">Highest rated</option>
+            <option value="trending">Trending</option>
+          </select>
+          <select id="exploreRating" aria-label="Minimum rating">
+            <option value="">Any rating</option>
+            <option value="6">6+ rating</option>
+            <option value="7">7+ rating</option>
+            <option value="8">8+ rating</option>
+            <option value="9">9+ rating</option>
+          </select>
+        </div>
+
+        <div class="explore-scroll" id="exploreScroll" tabindex="0">
+          <div class="explore-grid" id="exploreGrid"></div>
+          <div class="explore-loading" id="exploreLoading" hidden>Loading more treasures…</div>
+          <div id="exploreSentinel" class="explore-sentinel" aria-hidden="true"></div>
+        </div>
+        <button class="explore-scroll-cue" id="exploreScrollCue" type="button" aria-label="Scroll for more">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6.7 8.6 5.3 5.3 5.3-5.3 1.4 1.4-6.7 6.7L5.3 10l1.4-1.4Z"/></svg>
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div class="explore-modal" id="exploreModal" hidden>
+    <section class="explore-detail" role="dialog" aria-modal="true" aria-labelledby="exploreDetailTitle">
+      <button class="explore-detail-close" id="exploreDetailClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4 6.4 5Z"/></svg>
+      </button>
+      <div class="explore-detail-art" id="exploreDetailArt"></div>
+      <div class="explore-detail-copy">
+        <span class="explore-detail-type" id="exploreDetailType"></span>
+        <h2 id="exploreDetailTitle"></h2>
+        <div class="explore-detail-meta" id="exploreDetailMeta"></div>
+        <p id="exploreDetailDescription"></p>
+        <button class="main-button explore-watch" id="exploreWatchNow" type="button">Watch Now</button>
+      </div>
+    </section>
   </div>
 
   <div class="modal-backdrop" id="historyModal" hidden>
@@ -301,7 +386,8 @@
   </div>
 
   <script src="config.js"></script>
-  <script src="js/app.js"></script>
-  <script src="js/navigation.js"></script>
+  <script src="js/app.js?v=76"></script>
+  <script src="js/navigation.js?v=76"></script>
+  <script src="js/explore.js?v=77"></script>
 </body>
 </html>
