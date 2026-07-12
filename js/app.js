@@ -66,10 +66,29 @@
       let activeServer = "vidnest";
 
       const SERVER_OPTIONS = {
-        anime: ["vidnest", "tryembed", "animepahe"],
-        movie: ["vidnest", "vidcore", "vidgod", "vidfast"],
-        tv: ["vidnest", "vidcore", "vidgod", "vidfast"]
+        anime: ["animepahe", "tryembed", "vidnest"],
+        movie: ["vidcore", "vidfast", "vidnest"],
+        tv: ["vidcore", "vidfast", "vidnest"]
       };
+      const PROGRESS_STORAGE_KEY = "memetvPlaybackProgressV1";
+      const LAST_WATCHED_KEY = "memetvLastWatchedV1";
+      const INTERNAL_SERVER_PREFIX = "memetvInternalServerV1:";
+      const TRUSTED_PLAYER_ORIGINS = new Set([
+        "https://vidnest.fun",
+        "https://vidcore.net",
+        "https://tryembed.us.cc",
+        "https://vidfast.pro",
+        "https://vidfast.in",
+        "https://vidfast.io",
+        "https://vidfast.me",
+        "https://vidfast.net",
+        "https://vidfast.pm",
+        "https://vidfast.xyz",
+        "https://vidfast.vc",
+        "https://vidfast.bz"
+      ]);
+      let lastProgressWrite = 0;
+      const liveProgressByKey = new Map();
       let searchTimer = null;
       let lastSearchText = "";
       let movieSearchTimer = null;
@@ -195,6 +214,7 @@
             Media(id: $id, type: ANIME) {
               id
               episodes
+              status
               format
               seasonYear
               nextAiringEpisode { episode }
@@ -228,7 +248,8 @@
           name,
           image: anime.coverImage?.medium || "",
           subline,
-          totalEpisodes
+          totalEpisodes,
+          status: anime.status || ""
         };
 
         const selectedEpisode = item.mode === "anime"
@@ -239,6 +260,7 @@
           populateEpisodeDropdown(animeEpisode, totalEpisodes, selectedEpisode);
           item.animeName = name;
           item.animeTotalEpisodes = String(totalEpisodes);
+          item.animeStatus = anime.status || "";
         } else {
           populateEpisodeDropdown(animepaheEpisode, totalEpisodes, selectedEpisode);
           item.animeName = name;
@@ -317,7 +339,9 @@
             name: tvDisplayName(show),
             image: tmdbImage(show.poster_path),
             subline: tvSubline(show),
-            seasons: show.seasons || []
+            seasons: show.seasons || [],
+            lastEpisodeToAir: show.last_episode_to_air || null,
+            status: show.status || ""
           };
           tvMetaCache[id] = info;
           return info;
@@ -472,20 +496,23 @@
           image: tmdbImage(details.poster_path),
           subline: tvSubline(details),
           seasons: details.seasons || [],
-          lastEpisodeToAir: details.last_episode_to_air || null
+          lastEpisodeToAir: details.last_episode_to_air || null,
+          status: details.status || ""
         };
 
-        // A newly selected show always starts at Season 1 / Episode 1.
-        populateTvSeasons(details, "1");
-        await populateTvEpisodes(details.id, tvSeason.value, "1");
+        const savedProgress = latestProgressFor("tv", details.id);
+        const resumeSeason = String(savedProgress?.season || "1");
+        const resumeEpisode = String(savedProgress?.episode || "1");
+        populateTvSeasons(details, resumeSeason);
+        await populateTvEpisodes(details.id, tvSeason.value, resumeEpisode);
 
         updateSelectedTvCard(details.id);
         tvSearch.value = name;
         tvResults.innerHTML = "";
         tvResults.classList.remove("open");
 
-        localStorage.setItem("lastTvSeason", "1");
-        localStorage.setItem("lastTvEpisode", "1");
+        localStorage.setItem("lastTvSeason", tvSeason.value || resumeSeason);
+        localStorage.setItem("lastTvEpisode", tvEpisode.value || resumeEpisode);
         saveValues();
 
         if (autoplay) loadMedia();
@@ -669,6 +696,7 @@
             Media(id: $id, type: ANIME) {
               id
               episodes
+              status
               format
               seasonYear
               nextAiringEpisode { episode }
@@ -682,6 +710,7 @@
               media(search: $search, type: ANIME, sort: POPULARITY_DESC) {
                 id
                 episodes
+                status
                 format
                 seasonYear
                 nextAiringEpisode { episode }
@@ -745,12 +774,15 @@
           name,
           image: anime.coverImage?.medium || "",
           subline: animeSubline(anime),
-          totalEpisodes
+          totalEpisodes,
+          status: anime.status || ""
         };
 
         setMode("anime");
         animeId.value = anime.id;
-        populateEpisodeDropdown(animeEpisode, totalEpisodes, "1");
+        const savedProgress = latestProgressFor("anime", anime.id);
+        if (savedProgress?.language) animeType.value = savedProgress.language;
+        populateEpisodeDropdown(animeEpisode, totalEpisodes, String(savedProgress?.episode || "1"));
 
         updateSelectedAnimeCard(anime.id);
         saveValues();
@@ -863,8 +895,6 @@
           switch (serverOverride) {
             case "vidcore":
               return `https://vidcore.net/movie/${id}`;
-            case "vidgod":
-              return `https://vidgod.net/movie/${id}`;
             case "vidfast":
               return `https://vidfast.vc/movie/${id}?autoPlay=true`;
             case "vidnest":
@@ -885,8 +915,6 @@
         switch (serverOverride) {
           case "vidcore":
             return `https://vidcore.net/tv/${id}/${season}/${ep}`;
-          case "vidgod":
-            return `https://vidgod.net/tv/${id}/${season}/${ep}`;
           case "vidfast":
             return `https://vidfast.vc/tv/${id}/${season}/${ep}?autoPlay=true`;
           case "vidnest":
@@ -914,8 +942,233 @@
           button.setAttribute("aria-pressed", String(selected));
         });
 
+        // The original HTML order is provider-based. Move the visible
+        // buttons into their numbered order so the bar reads Srv1, Srv2,
+        // Srv3 from left to right in every media mode.
+        const buttonRow = serverPanel.querySelector(".server-buttons");
+        allowed.forEach(server => {
+          const button = Array.from(serverButtons).find(candidate => candidate.dataset.server === server);
+          if (button) buttonRow.appendChild(button);
+        });
+
         requestAnimationFrame(syncSidebarHeight);
       }
+
+      function currentProgressIdentity() {
+        if (mode === "anime") {
+          const id = animeId.value;
+          if (!id) return null;
+          const info = animeMetaCache[id] || {};
+          return {
+            key: `anime:${id}:episode:${animeEpisode.value || "1"}:${animeType.value || "sub"}`,
+            mode: "anime",
+            mediaId: id,
+            episode: animeEpisode.value || "1",
+            language: animeType.value || "sub",
+            title: selectedAnimeName.textContent.trim() || animeSearch.value.trim() || "Anime",
+            poster: info.image || selectedAnimeImage.src || "",
+            totalEpisodes: Number(animeEpisode.dataset.totalEpisodes || info.totalEpisodes || animeEpisode.value || 1)
+          };
+        }
+
+        if (mode === "animepahe") {
+          const id = animepaheId.value;
+          if (!id) return null;
+          return {
+            key: `anime:${id}:episode:${animepaheEpisode.value || "1"}:${animepaheType.value || "sub"}`,
+            mode: "anime",
+            mediaId: id,
+            episode: animepaheEpisode.value || "1",
+            language: animepaheType.value || "sub",
+            title: selectedAnimeName.textContent.trim() || animeSearch.value.trim() || "Anime"
+          };
+        }
+
+        if (mode === "movie") {
+          const id = movieId.value;
+          if (!id) return null;
+          const info = movieMetaCache[id] || {};
+          return {
+            key: `movie:${id}`,
+            mode: "movie",
+            mediaId: id,
+            title: selectedMovieName.textContent.trim() || movieSearch.value.trim() || "Movie",
+            poster: info.image || selectedMovieImage.src || ""
+          };
+        }
+
+        if (mode === "tv") {
+          const id = tvId.value;
+          if (!id) return null;
+          const info = tvMetaCache[id] || {};
+          const latest = info.lastEpisodeToAir || {};
+          return {
+            key: `tv:${id}:season:${tvSeason.value || "1"}:episode:${tvEpisode.value || "1"}`,
+            mode: "tv",
+            mediaId: id,
+            season: tvSeason.value || "1",
+            episode: tvEpisode.value || "1",
+            title: selectedTvName.textContent.trim() || tvSearch.value.trim() || "TV Show",
+            poster: info.image || selectedTvImage.src || "",
+            latestSeason: Number(latest.season_number || tvSeason.value || 1),
+            latestEpisode: Number(latest.episode_number || tvEpisode.value || 1)
+          };
+        }
+
+        return null;
+      }
+
+      function readProgressStore() {
+        try {
+          return JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY) || "{}") || {};
+        } catch {
+          return {};
+        }
+      }
+
+      function latestProgressFor(mediaMode, mediaId) {
+        return Object.values(readProgressStore())
+          .filter(entry => entry && entry.mode === mediaMode && String(entry.mediaId) === String(mediaId))
+          .sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0))[0] || null;
+      }
+
+      function getResumeTime() {
+        const identity = currentProgressIdentity();
+        if (!identity) return 0;
+        const entry = liveProgressByKey.get(identity.key) || readProgressStore()[identity.key];
+        const watched = Number(entry?.watched);
+        const duration = Number(entry?.duration);
+
+        if (!Number.isFinite(watched) || watched < 1) return 0;
+        if (Number.isFinite(duration) && duration > 0 && watched / duration >= 0.97) return 0;
+        return Math.max(0, Math.floor(watched));
+      }
+
+      function addResumeToUrl(url) {
+        const resumeTime = getResumeTime();
+        if (!url) return url;
+
+        try {
+          const resumedUrl = new URL(url);
+          const internalServer = localStorage.getItem(`${INTERNAL_SERVER_PREFIX}${activeServer}`);
+          if (internalServer) resumedUrl.searchParams.set("server", internalServer);
+
+          if (resumeTime > 0) {
+            resumedUrl.searchParams.set("startAt", String(resumeTime));
+            if (activeServer === "vidnest") {
+              resumedUrl.searchParams.set("progress", String(resumeTime));
+            }
+          }
+          return resumedUrl.toString();
+        } catch {
+          return url;
+        }
+      }
+
+      function providerFromOrigin(origin) {
+        if (origin === "https://vidnest.fun") return "vidnest";
+        if (origin === "https://vidcore.net") return "vidcore";
+        if (origin === "https://tryembed.us.cc") return "tryembed";
+        if (origin.startsWith("https://vidfast.")) return "vidfast";
+        return "";
+      }
+
+      function rememberInternalServer(origin, message) {
+        const provider = providerFromOrigin(origin);
+        if (!provider || !message || typeof message !== "object") return;
+        const payload = message.data && typeof message.data === "object" ? message.data : message;
+        const candidates = [
+          payload.server,
+          payload.serverName,
+          payload.selectedServer,
+          payload.currentServer,
+          payload.player?.server,
+          payload.settings?.server
+        ];
+        const selected = candidates.find(value => typeof value === "string" && /^[a-z0-9_-]{1,40}$/i.test(value));
+        if (selected) localStorage.setItem(`${INTERNAL_SERVER_PREFIX}${provider}`, selected);
+      }
+
+      function writeProgress(currentTime, duration, eventName = "timeupdate") {
+        const identity = currentProgressIdentity();
+        const watched = Number(currentTime);
+        const total = Number(duration);
+        if (!identity || !Number.isFinite(watched) || watched < 0) return;
+
+        liveProgressByKey.set(identity.key, {
+          watched,
+          duration: Number.isFinite(total) ? total : 0
+        });
+
+        const now = Date.now();
+        const immediate = ["pause", "seeked", "ended"].includes(eventName);
+        if (!immediate && now - lastProgressWrite < 3000) return;
+        lastProgressWrite = now;
+
+        const store = readProgressStore();
+        const completed = eventName === "ended" || (Number.isFinite(total) && total > 0 && watched / total >= 0.97);
+
+        if (completed) {
+          delete store[identity.key];
+          liveProgressByKey.delete(identity.key);
+        } else if (watched >= 1) {
+          store[identity.key] = {
+            ...identity,
+            watched,
+            duration: Number.isFinite(total) ? total : 0,
+            provider: activeServer,
+            updatedAt: now
+          };
+          localStorage.setItem(LAST_WATCHED_KEY, JSON.stringify(store[identity.key]));
+        }
+
+        localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(store));
+      }
+
+      function extractProgressFromMediaData(message) {
+        const identity = currentProgressIdentity();
+        if (!identity || !message) return null;
+
+        const payload = message.data || message;
+        const directProgress = payload.progress;
+        if (directProgress && Number.isFinite(Number(directProgress.watched))) return directProgress;
+
+        const keyedEntry = payload[identity.mediaId] || payload[`t${identity.mediaId}`] || payload[`m${identity.mediaId}`];
+        if (!keyedEntry) return null;
+
+        if (identity.mode === "tv" && keyedEntry.show_progress) {
+          const episodeKey = `s${identity.season}e${identity.episode}`;
+          return keyedEntry.show_progress[episodeKey]?.progress || null;
+        }
+
+        return keyedEntry.progress || null;
+      }
+
+      window.addEventListener("message", event => {
+        // VidNest can forward events from a nested player frame. The provider
+        // origin is the security boundary; requiring the outer iframe window
+        // incorrectly discards those valid progress messages.
+        if (!TRUSTED_PLAYER_ORIGINS.has(event.origin) || !event.data) return;
+        rememberInternalServer(event.origin, event.data);
+
+        if (event.data.type === "PLAYER_EVENT") {
+          const data = event.data.data || {};
+          writeProgress(data.currentTime, data.duration, data.event || "timeupdate");
+          return;
+        }
+
+        if (event.data.type === "MEDIA_DATA") {
+          const progress = extractProgressFromMediaData(event.data);
+          if (progress) writeProgress(progress.watched, progress.duration, "media_data");
+        }
+      });
+
+      player.addEventListener("load", () => {
+        // Providers that implement getStatus can include their currently
+        // selected internal server in the response. Unsupported players
+        // simply ignore this message.
+        setTimeout(() => player.contentWindow?.postMessage({ command: "getStatus" }, "*"), 700);
+      });
 
       function setActiveServer(server, reload = true) {
         const allowed = allowedServersForMode();
@@ -929,7 +1182,7 @@
         // season, and episode. This prevents a server switch from reverting
         // to values from a previous movie or show.
         if (reload && empty.classList.contains("hidden")) {
-          const nextUrl = buildUrl(activeServer);
+          const nextUrl = addResumeToUrl(buildUrl(activeServer));
           if (nextUrl) {
             player.src = nextUrl;
             saveValues();
@@ -1069,7 +1322,9 @@
             animeEpisode: animeEpisode.value,
             animeTotalEpisodes: animeEpisode.dataset.totalEpisodes || "1",
             animeType: animeType.value,
-            animeName
+            animeName,
+            animeImage: animeMetaCache[animeId.value]?.image || selectedAnimeImage.src || "",
+            animeStatus: animeMetaCache[animeId.value]?.status || ""
           };
         }
 
@@ -1102,6 +1357,7 @@
         }
 
         const info = tvMetaCache[tvId.value] || {};
+        const latest = info.lastEpisodeToAir || {};
         return {
           mode,
           url,
@@ -1111,9 +1367,75 @@
           tvEpisode: tvEpisode.value,
           tvName: info.name || tvSearch.value || "",
           tvImage: info.image || "",
-          tvSubline: info.subline || ""
+          tvSubline: info.subline || "",
+          tvLatestSeason: latest.season_number || tvSeason.value || "1",
+          tvLatestEpisode: latest.episode_number || tvEpisode.value || "1",
+          tvStatus: info.status || ""
         };
       }
+
+      function historyMediaKey(item) {
+        if (item.mode === "anime" || item.mode === "animepahe") {
+          return `anime:${item.animeId || item.animepaheId || ""}`;
+        }
+        if (item.mode === "movie") return `movie:${item.movieId || ""}`;
+        if (item.mode === "tv") return `tv:${item.tvId || ""}`;
+        return item.url || JSON.stringify(item);
+      }
+
+      let historyMetadataRefreshRunning = false;
+      async function refreshHistoryCatalogMetadata() {
+        if (historyMetadataRefreshRunning) return;
+        historyMetadataRefreshRunning = true;
+
+        try {
+          let stored = [];
+          try { stored = JSON.parse(localStorage.getItem("vidnestHistory") || "[]"); } catch {}
+
+          const unique = [];
+          const seen = new Set();
+          for (const item of stored) {
+            const key = historyMediaKey(item);
+            if (seen.has(key)) continue;
+            seen.add(key);
+            unique.push(item);
+          }
+
+          let changed = unique.length !== stored.length;
+          for (const item of unique) {
+            if (item.mode === "anime" || item.mode === "animepahe") {
+              if (item.animeStatus === "FINISHED") continue;
+              const id = item.animeId || item.animepaheId;
+              const anime = await getAniListAnimeById(id);
+              if (!anime) continue;
+              item.animeName = animeDisplayName(anime);
+              item.animeImage = anime.coverImage?.medium || item.animeImage || "";
+              item.animeTotalEpisodes = String(getAvailableEpisodes(anime));
+              item.animeStatus = anime.status || "";
+              changed = true;
+            } else if (item.mode === "tv") {
+              if (["Ended", "Canceled"].includes(item.tvStatus)) continue;
+              try {
+                const show = await tmdbRequest(`/tv/${item.tvId}?language=en-US`);
+                item.tvName = tvDisplayName(show);
+                item.tvImage = tmdbImage(show.poster_path) || item.tvImage || "";
+                item.tvSubline = tvSubline(show);
+                item.tvLatestSeason = String(show.last_episode_to_air?.season_number || item.tvLatestSeason || item.tvSeason || 1);
+                item.tvLatestEpisode = String(show.last_episode_to_air?.episode_number || item.tvLatestEpisode || item.tvEpisode || 1);
+                item.tvStatus = show.status || "";
+                changed = true;
+              } catch {}
+            }
+          }
+
+          if (changed) localStorage.setItem("vidnestHistory", JSON.stringify(unique.slice(0, 30)));
+          renderHistory();
+        } finally {
+          historyMetadataRefreshRunning = false;
+        }
+      }
+
+      window.refreshMemeTvHistoryMetadata = refreshHistoryCatalogMetadata;
 
       function addHistory(item) {
         let items = [];
@@ -1122,7 +1444,9 @@
           items = JSON.parse(localStorage.getItem("vidnestHistory") || "[]");
         } catch {}
 
-        items = items.filter(existing => existing.url !== item.url);
+        item.updatedAt = Date.now();
+        const key = historyMediaKey(item);
+        items = items.filter(existing => historyMediaKey(existing) !== key);
         items.unshift(item);
         items = items.slice(0, 30);
 
@@ -1131,7 +1455,7 @@
       }
 
       async function applyHistoryItem(item) {
-        if (!item || !item.mode || !item.url) return;
+        if (!item || !item.mode) return;
 
         setMode(item.mode);
 if (item.mode === "anime") {
@@ -1200,7 +1524,9 @@ if (item.mode === "anime") {
               name: tvDisplayName(show),
               image: tmdbImage(show.poster_path),
               subline: tvSubline(show),
-              seasons: show.seasons || []
+              seasons: show.seasons || [],
+              lastEpisodeToAir: show.last_episode_to_air || null,
+              status: show.status || ""
             };
             populateTvSeasons(show, item.tvSeason || "1");
             await populateTvEpisodes(item.tvId, tvSeason.value, item.tvEpisode || "1");
@@ -1208,6 +1534,9 @@ if (item.mode === "anime") {
             item.tvName = tvMetaCache[item.tvId].name;
             item.tvImage = tvMetaCache[item.tvId].image;
             item.tvSubline = tvMetaCache[item.tvId].subline;
+            item.tvStatus = tvMetaCache[item.tvId].status;
+            item.tvLatestSeason = String(show.last_episode_to_air?.season_number || item.tvSeason || 1);
+            item.tvLatestEpisode = String(show.last_episode_to_air?.episode_number || item.tvEpisode || 1);
             item.label = `${item.tvName || tvDisplayName(show)} • S${tvSeason.value}E${tvEpisode.value}`;
           } catch {
             tvSearch.value = item.tvName || "";
@@ -1222,7 +1551,7 @@ if (item.mode === "anime") {
           }
         }
 
-        const refreshedUrl = buildUrl() || item.url;
+        const refreshedUrl = addResumeToUrl(buildUrl() || item.url);
         player.src = refreshedUrl;
         empty.classList.add("hidden");
 
@@ -1234,7 +1563,122 @@ if (item.mode === "anime") {
         addHistory(item);
       }
 
+      function renderConsolidatedHistory() {
+        const box = document.getElementById("historyList");
+        box.innerHTML = "";
+
+        let items = [];
+        try { items = JSON.parse(localStorage.getItem("vidnestHistory") || "[]"); } catch {}
+
+        const progressByMedia = new Map();
+        for (const progress of Object.values(readProgressStore())) {
+          if (!progress?.mediaId || !progress?.mode) continue;
+          const key = `${progress.mode}:${progress.mediaId}`;
+          const previous = progressByMedia.get(key);
+          if (!previous || Number(progress.updatedAt || 0) > Number(previous.updatedAt || 0)) {
+            progressByMedia.set(key, progress);
+          }
+        }
+
+        const uniqueItems = [];
+        const seen = new Set();
+        for (const item of items) {
+          const key = historyMediaKey(item);
+          if (seen.has(key)) continue;
+          seen.add(key);
+          uniqueItems.push(item);
+        }
+
+        if (!uniqueItems.length) {
+          box.innerHTML = '<div class="history-empty">No history yet.</div>';
+          return;
+        }
+
+        uniqueItems.forEach(item => {
+          const mediaId = item.animeId || item.animepaheId || item.movieId || item.tvId;
+          const progressMode = item.mode === "animepahe" ? "anime" : item.mode;
+          const progress = progressByMedia.get(`${progressMode}:${mediaId}`) || null;
+          const title = item.animeName || item.movieName || item.tvName || (item.label || "Untitled").split(" • ")[0];
+          const poster = item.animeImage || item.movieImage || item.tvImage || progress?.poster || "";
+
+          let detail = "Ready to continue";
+          let percent = 0;
+          if (progressMode === "anime") {
+            // History records the episode the user most recently selected. An
+            // older playback timestamp must never pull the card backwards.
+            const current = Number(item.animeEpisode || item.animepaheEpisode || progress?.episode || 1);
+            const total = Number(item.animeTotalEpisodes || item.animepaheTotalEpisodes || progress?.totalEpisodes || current);
+            detail = total > 0 ? `Episode ${current} / ${total}` : `Episode ${current}`;
+            percent = total > 0 ? (current / total) * 100 : 0;
+            item.mode = "anime";
+            item.animeId = item.animeId || item.animepaheId || mediaId;
+            item.animeEpisode = String(current);
+            item.animeTotalEpisodes = String(total || current);
+            item.animeType = progress?.language || item.animeType || item.animepaheType || "sub";
+            item.animeName = title;
+            item.animeImage = poster;
+          } else if (progressMode === "movie") {
+            const watched = Number(progress?.watched || 0);
+            const duration = Number(progress?.duration || 0);
+            const watchedMinutes = Math.max(0, Math.floor(watched / 60));
+            const durationMinutes = Math.max(0, Math.ceil(duration / 60));
+            detail = durationMinutes > 0 ? `${watchedMinutes} / ${durationMinutes} minutes` : "Movie";
+            percent = duration > 0 ? (watched / duration) * 100 : 0;
+          } else if (progressMode === "tv") {
+            const season = Number(item.tvSeason || progress?.season || 1);
+            const episode = Number(item.tvEpisode || progress?.episode || 1);
+            const latestSeason = Number(item.tvLatestSeason || progress?.latestSeason || season);
+            const latestEpisode = Number(item.tvLatestEpisode || progress?.latestEpisode || episode);
+            detail = `S${season} E${episode} / S${latestSeason} E${latestEpisode}`;
+            percent = latestSeason === season && latestEpisode > 0 ? (episode / latestEpisode) * 100 : 0;
+            item.tvSeason = String(season);
+            item.tvEpisode = String(episode);
+          }
+
+          const card = document.createElement("button");
+          card.className = "history-media-card";
+
+          const artwork = document.createElement("span");
+          artwork.className = "history-poster";
+          if (poster) {
+            const img = document.createElement("img");
+            img.src = poster;
+            img.alt = "";
+            img.loading = "lazy";
+            artwork.appendChild(img);
+          }
+
+          const copy = document.createElement("span");
+          copy.className = "history-card-copy";
+          const heading = document.createElement("strong");
+          heading.textContent = title;
+          const status = document.createElement("span");
+          status.className = "history-progress-label";
+          status.textContent = detail;
+          const track = document.createElement("span");
+          track.className = "history-progress-track";
+          const fill = document.createElement("i");
+          fill.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+          track.appendChild(fill);
+          copy.append(heading, status, track);
+
+          const arrow = document.createElement("span");
+          arrow.className = "history-card-arrow";
+          arrow.textContent = "›";
+          card.append(artwork, copy, arrow);
+          card.onclick = async () => {
+            await applyHistoryItem(item);
+            document.getElementById("closeHistoryModal")?.click();
+          };
+          box.appendChild(card);
+        });
+
+        requestAnimationFrame(syncSidebarHeight);
+      }
+
       function renderHistory() {
+        return renderConsolidatedHistory();
+        /* Legacy renderer retained below only for compatibility with old builds. */
         const box = document.getElementById("historyList");
         box.innerHTML = "";
 
@@ -1263,7 +1707,7 @@ if (item.mode === "anime") {
       }
 
       async function loadMedia() {
-        const url = buildUrl();
+        const url = addResumeToUrl(buildUrl());
         if (!url) {
           player.removeAttribute("src");
           empty.classList.remove("hidden");

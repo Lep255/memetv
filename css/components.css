@@ -1675,6 +1675,108 @@ color:#fff;
   padding-right: 4px;
 }
 
+/* Consolidated continue-watching cards */
+.history-list .history-media-card {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 13px;
+  min-height: 82px;
+  padding: 9px;
+  border: 1px solid rgba(148, 163, 184, .2);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(20, 31, 52, .96), rgba(9, 17, 31, .96));
+  color: #f8fafc;
+  overflow: hidden;
+}
+
+.history-list .history-media-card:hover {
+  border-color: rgba(232, 153, 54, .58);
+  transform: translateY(-1px);
+}
+
+.history-list .history-poster {
+  display: block;
+  width: 58px;
+  height: 64px;
+  max-height: none;
+  overflow: hidden;
+  border-radius: 8px;
+  background: linear-gradient(145deg, #202640, #0b1220);
+  box-shadow: 0 4px 13px rgba(0, 0, 0, .35);
+}
+
+.history-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.history-list .history-card-copy {
+  display: flex !important;
+  min-width: 0;
+  max-height: none !important;
+  flex-direction: column;
+  gap: 5px;
+  overflow: visible;
+}
+
+.history-card-copy strong {
+  overflow: hidden;
+  color: #fff7e6;
+  font-size: 14px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-progress-label {
+  color: #b8c4d8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.history-progress-track {
+  display: block;
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(148, 163, 184, .16);
+}
+
+.history-progress-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #efa33f, #bf4bea);
+}
+
+.history-card-arrow {
+  color: #e9a03e;
+  font-size: 25px;
+  line-height: 1;
+}
+
+.history-empty {
+  padding: 22px 10px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  .history-list .history-media-card {
+    grid-template-columns: 48px minmax(0, 1fr) 16px;
+    min-height: 72px;
+    gap: 10px;
+  }
+
+  .history-list .history-poster {
+    width: 48px;
+    height: 55px;
+  }
+}
+
 .todo-dropdown {
   z-index: 12000;
 }

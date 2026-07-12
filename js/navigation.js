@@ -86,6 +86,7 @@
   function openHistory() {
     historyModal.hidden = false;
     document.body.classList.add("modal-open");
+    window.refreshMemeTvHistoryMetadata?.();
   }
 
   function closeHistoryModal() {
