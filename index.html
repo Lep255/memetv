@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/navigation.css">
   <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/explore.css?v=78">
+  <link rel="stylesheet" href="css/explore.css?v=86">
   <link rel="stylesheet" href="css/responsive.css">
 </head>
 <body>
@@ -143,7 +143,7 @@
               </span>
             </div>
             <div class="adblock-note">
-              This page does not contain ads. If you are getting ads, it's due to the video player. Make sure to keep your ad blockers updated, the website will not ask you to to click or download anything from the video player.
+              This page does not bring ads. If you are getting ads, it's due to the video player. Make sure to keep your ad blockers updated.
             </div>
             <div class="copy-filter-block inline-filter">
               <div class="copy-filter-title">Still getting ads? Use our custom filter list.</div>
@@ -298,6 +298,12 @@
           <div class="explore-result-count" id="exploreResultCount">Popular picks</div>
         </header>
 
+        <div class="explore-search-row">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 4a6.5 6.5 0 1 0 4.04 11.6L19 20l1-1-4.4-4.46A6.5 6.5 0 0 0 10.5 4Zm0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z"/></svg>
+          <input id="exploreSearch" type="search" placeholder="Search movie titles…" autocomplete="off" aria-label="Search catalogue titles">
+          <button id="exploreSearchClear" type="button" aria-label="Clear catalogue search" hidden>×</button>
+        </div>
+
         <div class="explore-filters" aria-label="Catalogue filters">
           <select id="exploreMedia" aria-label="Media type">
             <option value="movie">Movies</option>
@@ -322,6 +328,11 @@
             <option value="PH">Philippines</option>
           </select>
           <select id="exploreYear" aria-label="Release year"><option value="">Any year</option></select>
+          <select id="exploreReleaseStatus" aria-label="Release status">
+            <option value="released">Released</option>
+            <option value="unreleased">Unreleased / upcoming</option>
+            <option value="all">All release statuses</option>
+          </select>
           <select id="exploreGenre" aria-label="Genre">
             <option value="">All genres</option>
           </select>
@@ -329,15 +340,7 @@
             <option value="popular">Most popular</option>
             <option value="newest">Newest</option>
             <option value="oldest">Oldest</option>
-            <option value="rating">Highest rated</option>
             <option value="trending">Trending</option>
-          </select>
-          <select id="exploreRating" aria-label="Minimum rating">
-            <option value="">Any rating</option>
-            <option value="6">6+ rating</option>
-            <option value="7">7+ rating</option>
-            <option value="8">8+ rating</option>
-            <option value="9">9+ rating</option>
           </select>
         </div>
 
@@ -386,8 +389,8 @@
   </div>
 
   <script src="config.js"></script>
-  <script src="js/app.js?v=76"></script>
+  <script src="js/app.js?v=86"></script>
   <script src="js/navigation.js?v=76"></script>
-  <script src="js/explore.js?v=77"></script>
+  <script src="js/explore.js?v=86"></script>
 </body>
 </html>

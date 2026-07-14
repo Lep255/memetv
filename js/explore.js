@@ -11,9 +11,11 @@
   const media = document.getElementById("exploreMedia");
   const region = document.getElementById("exploreRegion");
   const year = document.getElementById("exploreYear");
+  const releaseStatus = document.getElementById("exploreReleaseStatus");
   const genre = document.getElementById("exploreGenre");
   const sort = document.getElementById("exploreSort");
-  const rating = document.getElementById("exploreRating");
+  const searchInput = document.getElementById("exploreSearch");
+  const searchClear = document.getElementById("exploreSearchClear");
   const modal = document.getElementById("exploreModal");
   const modalClose = document.getElementById("exploreDetailClose");
   const detailArt = document.getElementById("exploreDetailArt");
@@ -24,6 +26,7 @@
   const watchNow = document.getElementById("exploreWatchNow");
 
   if (!button || !view || !appGrid) return;
+  searchInput.title = "Prefix a title with ! to include explicit results in that search.";
 
   const TMDB_TOKEN = window.MEMETV_CONFIG?.tmdbReadToken || "";
   const TMDB_IMAGE = "https://image.tmdb.org/t/p/w342";
@@ -49,6 +52,7 @@
   let isLoading = false;
   let requestVersion = 0;
   let selectedItem = null;
+  let searchTimer = null;
 
   const currentYear = new Date().getFullYear();
   for (let value = currentYear + 1; value >= 1900; value -= 1) {
@@ -60,6 +64,11 @@
 
   function setGenres() {
     region.options[0].textContent = media.value === "anime" ? "All origins" : "All regions";
+    searchInput.placeholder = media.value === "anime"
+      ? "Search anime titles…"
+      : media.value === "tv"
+        ? "Search TV show titles…"
+        : "Search movie titles…";
     genre.innerHTML = '<option value="">All genres</option>';
     for (const entry of genres[media.value]) {
       const option = document.createElement("option");
@@ -95,42 +104,127 @@
       popular: "popularity.desc",
       newest: `${prefix}.desc`,
       oldest: `${prefix}.asc`,
-      rating: "vote_average.desc",
       trending: "popularity.desc"
     }[sort.value];
   }
 
+  function parsedSearch() {
+    const raw = searchInput.value.trim();
+    const hasExplicitPrefix = raw.startsWith("!");
+    const text = hasExplicitPrefix ? raw.slice(1).trim() : raw;
+    return {
+      text,
+      includeExplicit: hasExplicitPrefix && Boolean(text)
+    };
+  }
+
+  function isoToday(offsetDays = 0) {
+    const date = new Date();
+    date.setHours(12, 0, 0, 0);
+    date.setDate(date.getDate() + offsetDays);
+    return date.toISOString().slice(0, 10);
+  }
+
+  function releaseDateFor(item) {
+    return item.release_date || item.first_air_date || "";
+  }
+
+  function matchesReleaseStatus(item) {
+    if (releaseStatus.value === "all") return true;
+    const date = releaseDateFor(item);
+    if (!date) return false;
+    return releaseStatus.value === "unreleased" ? date > isoToday() : date <= isoToday();
+  }
+
+  function tvEpisodeProgress(details) {
+    const latest = details?.last_episode_to_air;
+    const total = Number(details?.number_of_episodes || 0);
+    if (!latest) return { episodesOut: 0, totalEpisodes: total, latestLabel: "" };
+
+    const currentSeason = Number(latest.season_number || 1);
+    const previousEpisodes = (details.seasons || [])
+      .filter(season => Number(season.season_number) > 0 && Number(season.season_number) < currentSeason)
+      .reduce((sum, season) => sum + Number(season.episode_count || 0), 0);
+
+    return {
+      episodesOut: previousEpisodes + Number(latest.episode_number || 0),
+      totalEpisodes: total,
+      latestLabel: `S${currentSeason} E${Number(latest.episode_number || 1)}`
+    };
+  }
+
+  async function enrichTvItems(items) {
+    if (media.value !== "tv") return items;
+    const enriched = [];
+    for (let offset = 0; offset < items.length; offset += 5) {
+      const batch = items.slice(offset, offset + 5);
+      const settled = await Promise.allSettled(batch.map(async item => {
+        const response = await fetch(`https://api.themoviedb.org/3/tv/${item.id}?language=en-US`, {
+          headers: { Authorization: `Bearer ${TMDB_TOKEN}`, Accept: "application/json" }
+        });
+        if (!response.ok) return item;
+        return Object.assign(item, tvEpisodeProgress(await response.json()));
+      }));
+      enriched.push(...settled.map((result, index) => result.status === "fulfilled" ? result.value : batch[index]));
+    }
+    return enriched;
+  }
+
   async function fetchTmdb() {
     if (!TMDB_TOKEN) throw new Error("TMDB token is missing from config.js.");
+    let scanPage = page;
+    let totalPages = page;
+    const search = parsedSearch();
+    const searchText = search.text;
     const params = new URLSearchParams({
-      language: "en-US",
-      page: String(page),
-      include_adult: "false",
-      sort_by: tmdbSort(),
-      "vote_count.gte": sort.value === "rating" ? "100" : "10"
+        language: "en-US",
+        page: String(scanPage),
+        include_adult: String(search.includeExplicit)
     });
-    if (region.value) params.set("with_origin_country", region.value);
-    if (year.value) params.set(media.value === "movie" ? "primary_release_year" : "first_air_date_year", year.value);
-    if (genre.value) params.set("with_genres", genre.value);
-    if (rating.value) params.set("vote_average.gte", rating.value);
+    let endpoint = `discover/${media.value}`;
+    if (searchText) {
+      endpoint = `search/${media.value}`;
+      params.set("query", searchText);
+    } else {
+      params.set("sort_by", tmdbSort());
+      const dateField = media.value === "movie" ? "primary_release_date" : "first_air_date";
+      if (releaseStatus.value === "released") params.set(`${dateField}.lte`, isoToday());
+      if (releaseStatus.value === "unreleased") params.set(`${dateField}.gte`, isoToday(1));
+      if (region.value) params.set("with_origin_country", region.value);
+      if (year.value) params.set(media.value === "movie" ? "primary_release_year" : "first_air_date_year", year.value);
+      if (genre.value) params.set("with_genres", genre.value);
+    }
 
-    const response = await fetch(`https://api.themoviedb.org/3/discover/${media.value}?${params}`, {
+    const response = await fetch(`https://api.themoviedb.org/3/${endpoint}?${params}`, {
       headers: { Authorization: `Bearer ${TMDB_TOKEN}`, Accept: "application/json" }
     });
     if (!response.ok) throw new Error("TMDB catalogue request failed.");
     const data = await response.json();
+    totalPages = Math.min(Number(data.total_pages || 1), 500);
+    let results = data.results || [];
+    if (searchText) {
+      results = results.filter(matchesReleaseStatus);
+      if (region.value) results = results.filter(item => (item.origin_country || []).includes(region.value));
+      if (year.value) results = results.filter(item => String(item.release_date || item.first_air_date || "").startsWith(year.value));
+      if (genre.value) results = results.filter(item => (item.genre_ids || []).includes(Number(genre.value)));
+    }
+    scanPage += 1;
+
+    const items = results.map(item => ({
+      id: item.id,
+      kind: media.value,
+      title: item.title || item.name || item.original_title || item.original_name,
+      description: item.overview || "No description is currently available.",
+      poster: item.poster_path ? `${TMDB_IMAGE}${item.poster_path}` : "",
+      backdrop: item.backdrop_path ? `${TMDB_BACKDROP}${item.backdrop_path}` : "",
+      year: String(item.release_date || item.first_air_date || "").slice(0, 4),
+      score: Number(item.vote_average || 0)
+    }));
+
     return {
-      hasMore: page < Number(data.total_pages || 1),
-      items: (data.results || []).map(item => ({
-        id: item.id,
-        kind: media.value,
-        title: item.title || item.name || item.original_title || item.original_name,
-        description: item.overview || "No description is currently available.",
-        poster: item.poster_path ? `${TMDB_IMAGE}${item.poster_path}` : "",
-        backdrop: item.backdrop_path ? `${TMDB_BACKDROP}${item.backdrop_path}` : "",
-        year: String(item.release_date || item.first_air_date || "").slice(0, 4),
-        score: Number(item.vote_average || 0)
-      }))
+      hasMore: scanPage <= totalPages,
+      nextPage: scanPage,
+      items: await enrichTvItems(items)
     };
   }
 
@@ -139,17 +233,43 @@
       popular: "POPULARITY_DESC",
       newest: "START_DATE_DESC",
       oldest: "START_DATE",
-      rating: "SCORE_DESC",
       trending: "TRENDING_DESC"
     }[sort.value];
+  }
+
+  function animeEpisodesOut(item) {
+    const nextEpisode = Number(item?.nextAiringEpisode?.episode || 0);
+    const total = Number(item?.episodes || 0);
+    if (nextEpisode > 1) return nextEpisode - 1;
+    if (item?.status === "FINISHED" && total > 0) return total;
+    if (item?.status === "FINISHED") return 1;
+    if (item?.status === "RELEASING" || item?.status === "HIATUS") return 1;
+    if (item?.status === "NOT_YET_RELEASED") return 0;
+    return 0;
   }
 
   async function fetchAnime() {
     // AniList rejects comparisons against null (for example,
     // averageScore_greater: null). Build only the filters the user selected.
+    const search = parsedSearch();
     const definitions = ["$page: Int", "$sort: [MediaSort]"];
-    const argumentsList = ["type: ANIME", "sort: $sort", "isAdult: false"];
+    const argumentsList = ["type: ANIME", "sort: $sort"];
+    if (!search.includeExplicit) argumentsList.push("isAdult: false");
     const variables = { page, sort: [animeSort()] };
+
+    if (releaseStatus.value === "released") {
+      definitions.push("$before: FuzzyDateInt");
+      argumentsList.push("startDate_lesser: $before", "status_in: [RELEASING, FINISHED, HIATUS]");
+      variables.before = Number(isoToday(1).replaceAll("-", ""));
+    } else if (releaseStatus.value === "unreleased") {
+      argumentsList.push("status: NOT_YET_RELEASED");
+    }
+
+    if (search.text) {
+      definitions.push("$search: String");
+      argumentsList.push("search: $search");
+      variables.search = search.text;
+    }
 
     if (year.value) {
       definitions.push("$year: Int");
@@ -166,11 +286,6 @@
       argumentsList.push("genre: $genre");
       variables.genre = genre.value;
     }
-    if (rating.value) {
-      definitions.push("$score: Int");
-      argumentsList.push("averageScore_greater: $score");
-      variables.score = Number(rating.value) * 10;
-    }
 
     const query = `
       query (${definitions.join(", ")}) {
@@ -178,6 +293,8 @@
           pageInfo { hasNextPage }
           media(${argumentsList.join(", ")}) {
             id status episodes format seasonYear averageScore description(asHtml: false)
+            startDate { year month day }
+            nextAiringEpisode { episode airingAt }
             title { english romaji native }
             coverImage { large extraLarge }
             bannerImage
@@ -191,20 +308,25 @@
     });
     if (!response.ok) throw new Error("AniList catalogue request failed.");
     const data = await response.json();
+    let items = (data?.data?.Page?.media || []).map(item => ({
+      id: item.id,
+      kind: "anime",
+      title: item.title?.english || item.title?.romaji || item.title?.native || "Anime",
+      description: item.description || "No description is currently available.",
+      poster: item.coverImage?.extraLarge || item.coverImage?.large || "",
+      backdrop: item.bannerImage || item.coverImage?.extraLarge || "",
+      year: item.seasonYear || "",
+      score: Number(item.averageScore || 0) / 10,
+      episodes: item.episodes,
+      episodesOut: animeEpisodesOut(item),
+      status: item.status,
+      format: item.format
+    }));
+    if (releaseStatus.value === "released") items = items.filter(item => item.episodesOut > 0);
+
     return {
       hasMore: Boolean(data?.data?.Page?.pageInfo?.hasNextPage),
-      items: (data?.data?.Page?.media || []).map(item => ({
-        id: item.id,
-        kind: "anime",
-        title: item.title?.english || item.title?.romaji || item.title?.native || "Anime",
-        description: item.description || "No description is currently available.",
-        poster: item.coverImage?.extraLarge || item.coverImage?.large || "",
-        backdrop: item.bannerImage || item.coverImage?.extraLarge || "",
-        year: item.seasonYear || "",
-        score: Number(item.averageScore || 0) / 10,
-        episodes: item.episodes,
-        format: item.format
-      }))
+      items
     };
   }
 
@@ -224,7 +346,12 @@
     title.textContent = item.title;
     const meta = document.createElement("span");
     meta.className = "explore-card-meta";
-    meta.textContent = [item.year, item.kind === "anime" ? "Anime" : item.kind === "tv" ? "TV Show" : "Movie"].filter(Boolean).join(" • ");
+    const episodeMeta = item.kind === "anime"
+      ? `${item.episodesOut || 0}${item.episodes ? ` / ${item.episodes}` : ""} episodes out`
+      : item.kind === "tv" && item.totalEpisodes
+        ? `${item.episodesOut || 0} / ${item.totalEpisodes} episodes out`
+        : "";
+    meta.textContent = [item.year, item.kind === "anime" ? "Anime" : item.kind === "tv" ? "TV Show" : "Movie", episodeMeta].filter(Boolean).join(" • ");
     copy.append(title, meta);
     card.append(image, copy);
     if (item.score > 0) {
@@ -242,7 +369,12 @@
     detailArt.style.backgroundImage = item.backdrop || item.poster ? `linear-gradient(to top, rgba(5,12,23,.5), transparent), url("${item.backdrop || item.poster}")` : "";
     detailType.textContent = item.kind === "anime" ? "Anime" : item.kind === "tv" ? "TV Show" : "Movie";
     detailTitle.textContent = item.title;
-    detailMeta.textContent = [item.year, item.score ? `★ ${item.score.toFixed(1)}` : "", item.episodes ? `${item.episodes} episodes` : ""].filter(Boolean).join(" • ");
+    const episodeMeta = item.kind === "anime"
+      ? `${item.episodesOut || 0}${item.episodes ? ` / ${item.episodes}` : ""} episodes out`
+      : item.kind === "tv" && item.totalEpisodes
+        ? `${item.episodesOut || 0} / ${item.totalEpisodes} episodes out${item.latestLabel ? ` • Latest ${item.latestLabel}` : ""}`
+        : "";
+    detailMeta.textContent = [item.year, item.score ? `★ ${item.score.toFixed(1)}` : "", episodeMeta].filter(Boolean).join(" • ");
     detailDescription.textContent = item.description;
     modal.hidden = false;
     document.body.classList.add("modal-open");
@@ -261,9 +393,10 @@
     try {
       const result = media.value === "anime" ? await fetchAnime() : await fetchTmdb();
       if (version !== requestVersion) return;
+      grid.querySelector(".explore-empty")?.remove();
       result.items.forEach(item => grid.appendChild(createCard(item)));
       hasMore = result.hasMore;
-      page += 1;
+      page = Number(result.nextPage || (page + 1));
       count.textContent = `${grid.children.length} titles loaded`;
       cue.classList.toggle("is-hidden", !hasMore);
       if (!grid.children.length) grid.innerHTML = '<div class="explore-empty">No titles matched these filters.</div>';
@@ -292,7 +425,7 @@
     grid.innerHTML = "";
     scroll.scrollTop = 0;
     cue.classList.remove("is-hidden");
-    count.textContent = "Popular picks";
+    count.textContent = parsedSearch().text ? "Search results" : "Popular picks";
     loadMore();
   }
 
@@ -304,8 +437,28 @@
   }));
 
   media.addEventListener("change", () => { setGenres(); resetCatalogue(); });
-  [region, year, genre, sort, rating].forEach(control => control.addEventListener("change", resetCatalogue));
-  cue.addEventListener("click", () => scroll.scrollBy({ top: Math.max(320, scroll.clientHeight * .72), behavior: "smooth" }));
+  [region, year, releaseStatus, genre, sort].forEach(control => control.addEventListener("change", resetCatalogue));
+  searchInput.addEventListener("input", () => {
+    searchClear.hidden = !searchInput.value;
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(resetCatalogue, 380);
+  });
+  searchInput.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      clearTimeout(searchTimer);
+      resetCatalogue();
+    }
+  });
+  searchClear.addEventListener("click", () => {
+    searchInput.value = "";
+    searchClear.hidden = true;
+    searchInput.focus();
+    resetCatalogue();
+  });
+  cue.addEventListener("click", () => {
+    loadMore();
+    scroll.scrollBy({ top: Math.max(320, scroll.clientHeight * .72), behavior: "smooth" });
+  });
   scroll.addEventListener("scroll", () => cue.classList.toggle("is-hidden", !hasMore || scroll.scrollTop > 80));
   modalClose.addEventListener("click", closeDetails);
   modal.addEventListener("click", event => { if (event.target === modal) closeDetails(); });
