@@ -26,7 +26,7 @@
   const watchNow = document.getElementById("exploreWatchNow");
 
   if (!button || !view || !appGrid) return;
-  searchInput.title = "Prefix a title with ! to include explicit results in that search.";
+  searchInput.title = "Use ! to include explicit content, or !!! to show explicit content only.";
 
   const TMDB_TOKEN = window.MEMETV_CONFIG?.tmdbReadToken || "";
   const TMDB_IMAGE = "https://image.tmdb.org/t/p/w342";
@@ -110,11 +110,14 @@
 
   function parsedSearch() {
     const raw = searchInput.value.trim();
-    const hasExplicitPrefix = raw.startsWith("!");
-    const text = hasExplicitPrefix ? raw.slice(1).trim() : raw;
+    const adultOnly = raw.startsWith("!!!");
+    const includeExplicit = raw.startsWith("!");
+    const prefixLength = adultOnly ? 3 : includeExplicit ? 1 : 0;
+    const text = prefixLength ? raw.slice(prefixLength).trim() : raw;
     return {
       text,
-      includeExplicit: hasExplicitPrefix && Boolean(text)
+      includeExplicit,
+      adultOnly
     };
   }
 
@@ -176,41 +179,64 @@
     let totalPages = page;
     const search = parsedSearch();
     const searchText = search.text;
-    const params = new URLSearchParams({
+    const matched = [];
+    let scans = 0;
+
+    do {
+      const params = new URLSearchParams({
         language: "en-US",
         page: String(scanPage),
         include_adult: String(search.includeExplicit)
-    });
-    let endpoint = `discover/${media.value}`;
-    if (searchText) {
-      endpoint = `search/${media.value}`;
-      params.set("query", searchText);
-    } else {
-      params.set("sort_by", tmdbSort());
-      const dateField = media.value === "movie" ? "primary_release_date" : "first_air_date";
-      if (releaseStatus.value === "released") params.set(`${dateField}.lte`, isoToday());
-      if (releaseStatus.value === "unreleased") params.set(`${dateField}.gte`, isoToday(1));
-      if (region.value) params.set("with_origin_country", region.value);
-      if (year.value) params.set(media.value === "movie" ? "primary_release_year" : "first_air_date_year", year.value);
-      if (genre.value) params.set("with_genres", genre.value);
+      });
+      let endpoint = `discover/${media.value}`;
+      if (searchText) {
+        endpoint = `search/${media.value}`;
+        params.set("query", searchText);
+      } else {
+        const dateField = media.value === "movie" ? "primary_release_date" : "first_air_date";
+        // TMDB has no adult-only discover filter. Its popularity ordering can
+        // bury every adult result hundreds of pages deep, while date ordering
+        // exposes candidates consistently. Reorder the retained matches below.
+        params.set("sort_by", search.adultOnly
+          ? `${dateField}.${sort.value === "oldest" ? "asc" : "desc"}`
+          : tmdbSort());
+        if (releaseStatus.value === "released") params.set(`${dateField}.lte`, isoToday());
+        if (releaseStatus.value === "unreleased") params.set(`${dateField}.gte`, isoToday(1));
+        if (region.value) params.set("with_origin_country", region.value);
+        if (year.value) params.set(media.value === "movie" ? "primary_release_year" : "first_air_date_year", year.value);
+        if (genre.value) params.set("with_genres", genre.value);
+      }
+
+      const response = await fetch(`https://api.themoviedb.org/3/${endpoint}?${params}`, {
+        headers: { Authorization: `Bearer ${TMDB_TOKEN}`, Accept: "application/json" }
+      });
+      if (!response.ok) throw new Error("TMDB catalogue request failed.");
+      const data = await response.json();
+      totalPages = Math.min(Number(data.total_pages || 1), 500);
+      let results = data.results || [];
+      if (searchText) {
+        results = results.filter(matchesReleaseStatus);
+        if (region.value) results = results.filter(item => (item.origin_country || []).includes(region.value));
+        if (year.value) results = results.filter(item => String(item.release_date || item.first_air_date || "").startsWith(year.value));
+        if (genre.value) results = results.filter(item => (item.genre_ids || []).includes(Number(genre.value)));
+      }
+      if (search.adultOnly) results = results.filter(item => item.adult === true);
+      matched.push(...results);
+      scanPage += 1;
+      scans += 1;
+    } while (search.adultOnly && matched.length < 20 && scanPage <= totalPages && scans < 25);
+
+    if (search.adultOnly && !searchText) {
+      matched.sort((a, b) => {
+        const aDate = releaseDateFor(a);
+        const bDate = releaseDateFor(b);
+        if (sort.value === "oldest") return aDate.localeCompare(bDate);
+        if (sort.value === "newest") return bDate.localeCompare(aDate);
+        return Number(b.popularity || 0) - Number(a.popularity || 0);
+      });
     }
 
-    const response = await fetch(`https://api.themoviedb.org/3/${endpoint}?${params}`, {
-      headers: { Authorization: `Bearer ${TMDB_TOKEN}`, Accept: "application/json" }
-    });
-    if (!response.ok) throw new Error("TMDB catalogue request failed.");
-    const data = await response.json();
-    totalPages = Math.min(Number(data.total_pages || 1), 500);
-    let results = data.results || [];
-    if (searchText) {
-      results = results.filter(matchesReleaseStatus);
-      if (region.value) results = results.filter(item => (item.origin_country || []).includes(region.value));
-      if (year.value) results = results.filter(item => String(item.release_date || item.first_air_date || "").startsWith(year.value));
-      if (genre.value) results = results.filter(item => (item.genre_ids || []).includes(Number(genre.value)));
-    }
-    scanPage += 1;
-
-    const items = results.map(item => ({
+    const items = matched.map(item => ({
       id: item.id,
       kind: media.value,
       title: item.title || item.name || item.original_title || item.original_name,
@@ -252,10 +278,9 @@
     // AniList rejects comparisons against null (for example,
     // averageScore_greater: null). Build only the filters the user selected.
     const search = parsedSearch();
-    const definitions = ["$page: Int", "$sort: [MediaSort]"];
-    const argumentsList = ["type: ANIME", "sort: $sort"];
-    if (!search.includeExplicit) argumentsList.push("isAdult: false");
-    const variables = { page, sort: [animeSort()] };
+    const definitions = ["$page: Int", "$perPage: Int", "$sort: [MediaSort]", "$adult: Boolean"];
+    const argumentsList = ["type: ANIME", "sort: $sort", "isAdult: $adult"];
+    const variables = { page, perPage: search.includeExplicit && !search.adultOnly ? 10 : 20, sort: [animeSort()] };
 
     if (releaseStatus.value === "released") {
       definitions.push("$before: FuzzyDateInt");
@@ -289,7 +314,7 @@
 
     const query = `
       query (${definitions.join(", ")}) {
-        Page(page: $page, perPage: 20) {
+        Page(page: $page, perPage: $perPage) {
           pageInfo { hasNextPage }
           media(${argumentsList.join(", ")}) {
             id status episodes format seasonYear averageScore description(asHtml: false)
@@ -301,14 +326,25 @@
           }
         }
       }`;
-    const response = await fetch("https://graphql.anilist.co", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ query, variables })
-    });
-    if (!response.ok) throw new Error("AniList catalogue request failed.");
-    const data = await response.json();
-    let items = (data?.data?.Page?.media || []).map(item => ({
+    async function requestAdultGroup(adult) {
+      const response = await fetch("https://graphql.anilist.co", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ query, variables: { ...variables, adult } })
+      });
+      if (!response.ok) throw new Error("AniList catalogue request failed.");
+      return response.json();
+    }
+
+    const adultGroups = search.includeExplicit && !search.adultOnly
+      ? await Promise.all([requestAdultGroup(false), requestAdultGroup(true)])
+      : [await requestAdultGroup(search.adultOnly)];
+    const mediaGroups = adultGroups.map(data => data?.data?.Page?.media || []);
+    const combinedMedia = mediaGroups.length === 2
+      ? mediaGroups[0].flatMap((item, index) => [item, mediaGroups[1][index]].filter(Boolean))
+      : mediaGroups[0];
+
+    let items = combinedMedia.map(item => ({
       id: item.id,
       kind: "anime",
       title: item.title?.english || item.title?.romaji || item.title?.native || "Anime",
@@ -325,7 +361,7 @@
     if (releaseStatus.value === "released") items = items.filter(item => item.episodesOut > 0);
 
     return {
-      hasMore: Boolean(data?.data?.Page?.pageInfo?.hasNextPage),
+      hasMore: adultGroups.some(data => Boolean(data?.data?.Page?.pageInfo?.hasNextPage)),
       items
     };
   }
@@ -425,7 +461,14 @@
     grid.innerHTML = "";
     scroll.scrollTop = 0;
     cue.classList.remove("is-hidden");
-    count.textContent = parsedSearch().text ? "Search results" : "Popular picks";
+    const search = parsedSearch();
+    count.textContent = search.text
+      ? "Search results"
+      : search.adultOnly
+        ? "Explicit content only"
+        : search.includeExplicit
+          ? "Explicit content enabled"
+        : "Popular picks";
     loadMore();
   }
 
