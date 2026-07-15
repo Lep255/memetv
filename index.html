@@ -7,8 +7,8 @@
   <link rel="icon" type="image/png" href="assets/icons/favicon.png">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/navigation.css">
-  <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/explore.css?v=89">
+  <link rel="stylesheet" href="css/components.css?v=96">
+  <link rel="stylesheet" href="css/explore.css?v=90">
   <link rel="stylesheet" href="css/responsive.css">
 </head>
 <body>
@@ -310,8 +310,19 @@
             <option value="tv">TV Shows</option>
             <option value="anime">Anime</option>
           </select>
-          <select id="exploreRegion" aria-label="Region">
-            <option value="">All regions</option>
+          <select id="exploreSort" aria-label="Sort catalogue">
+            <option value="popular">Popularity</option>
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="trending">Trending</option>
+          </select>
+          <select id="exploreReleaseStatus" aria-label="Release status"></select>
+          <select id="exploreGenre" aria-label="Genre">
+            <option value="">All genres</option>
+          </select>
+          <select id="exploreYear" aria-label="Release year"><option value="">Any year</option></select>
+          <select id="exploreRegion" aria-label="Country">
+            <option value="">All countries</option>
             <option value="US">United States</option>
             <option value="KR">Korea</option>
             <option value="TH">Thailand</option>
@@ -326,21 +337,6 @@
             <option value="BR">Brazil</option>
             <option value="MX">Mexico</option>
             <option value="PH">Philippines</option>
-          </select>
-          <select id="exploreYear" aria-label="Release year"><option value="">Any year</option></select>
-          <select id="exploreReleaseStatus" aria-label="Release status">
-            <option value="released">Released</option>
-            <option value="unreleased">Unreleased / upcoming</option>
-            <option value="all">All release statuses</option>
-          </select>
-          <select id="exploreGenre" aria-label="Genre">
-            <option value="">All genres</option>
-          </select>
-          <select id="exploreSort" aria-label="Sort catalogue">
-            <option value="popular">Most popular</option>
-            <option value="newest">Newest</option>
-            <option value="oldest">Oldest</option>
-            <option value="trending">Trending</option>
           </select>
         </div>
 
@@ -389,8 +385,8 @@
   </div>
 
   <script src="config.js"></script>
-  <script src="js/app.js?v=89"></script>
+  <script src="js/app.js?v=92"></script>
   <script src="js/navigation.js?v=76"></script>
-  <script src="js/explore.js?v=89"></script>
+  <script src="js/explore.js?v=97"></script>
 </body>
 </html>

@@ -116,8 +116,13 @@
         const finishedTotal = Number(anime?.episodes || 0);
         const nextEpisode = Number(anime?.nextAiringEpisode?.episode || 0);
 
-        if (finishedTotal > 0) return finishedTotal;
+        // AniList may already publish the planned season total while only a
+        // handful of episodes have aired. Prefer the next-airing position for
+        // active shows so the player never offers future episodes.
         if (nextEpisode > 1) return nextEpisode - 1;
+        if (anime?.status === "FINISHED" && finishedTotal > 0) return finishedTotal;
+        if (anime?.status === "FINISHED") return 1;
+        if (anime?.status === "RELEASING" || anime?.status === "HIATUS") return 1;
 
         return 1;
       }
@@ -1383,6 +1388,15 @@
         return item.url || JSON.stringify(item);
       }
 
+      function removeHistoryMedia(item) {
+        let stored = [];
+        try { stored = JSON.parse(localStorage.getItem("vidnestHistory") || "[]"); } catch {}
+        const key = historyMediaKey(item);
+        const remaining = stored.filter(entry => historyMediaKey(entry) !== key);
+        localStorage.setItem("vidnestHistory", JSON.stringify(remaining));
+        renderHistory();
+      }
+
       let historyMetadataRefreshRunning = false;
       async function refreshHistoryCatalogMetadata() {
         if (historyMetadataRefreshRunning) return;
@@ -1457,7 +1471,11 @@
       async function applyHistoryItem(item) {
         if (!item || !item.mode) return;
 
-        setMode(item.mode);
+        const targetMode = item.mode === "animepahe" ? "anime" : item.mode;
+        const modeButton = document.querySelector(`.menu-button[data-mode="${targetMode}"]`);
+        if (modeButton) modeButton.click();
+        else setMode(item.mode);
+        if (item.mode === "animepahe") setMode("animepahe");
 if (item.mode === "anime") {
           animeId.value = item.animeId || "";
           animeType.value = item.animeType || "sub";
@@ -1666,11 +1684,84 @@ if (item.mode === "anime") {
           arrow.className = "history-card-arrow";
           arrow.textContent = "›";
           card.append(artwork, copy, arrow);
-          card.onclick = async () => {
+          let suppressCardClick = false;
+          card.onclick = async event => {
+            if (suppressCardClick) {
+              event.preventDefault();
+              return;
+            }
             await applyHistoryItem(item);
             document.getElementById("closeHistoryModal")?.click();
           };
-          box.appendChild(card);
+
+          const swipeRow = document.createElement("div");
+          swipeRow.className = "history-swipe-row";
+          const deleteReveal = document.createElement("div");
+          deleteReveal.className = "history-swipe-delete";
+          deleteReveal.textContent = "Delete";
+          swipeRow.append(deleteReveal, card);
+          box.appendChild(swipeRow);
+
+          let pointerId = null;
+          let startX = 0;
+          let dragX = 0;
+          let dragging = false;
+
+          const finishSwipe = (cancelled = false) => {
+            if (pointerId === null) return;
+            const width = Math.max(1, card.offsetWidth);
+            const shouldDelete = !cancelled && Math.abs(dragX) >= width * 0.70;
+            pointerId = null;
+            card.style.transition = "transform 180ms ease";
+
+            if (shouldDelete) {
+              card.style.transform = `translateX(-${width}px)`;
+              swipeRow.classList.add("is-deleting");
+              window.setTimeout(() => removeHistoryMedia(item), 190);
+            } else {
+              card.style.transform = "translateX(0)";
+              window.setTimeout(() => {
+                card.style.removeProperty("transform");
+                card.style.removeProperty("transition");
+                swipeRow.classList.remove("is-swiping");
+              }, 190);
+            }
+
+            if (dragging) {
+              suppressCardClick = true;
+              window.setTimeout(() => { suppressCardClick = false; }, 250);
+            }
+            dragging = false;
+            dragX = 0;
+          };
+
+          card.addEventListener("pointerdown", event => {
+            if (!event.isPrimary || (event.pointerType === "mouse" && event.button !== 0)) return;
+            pointerId = event.pointerId;
+            startX = event.clientX;
+            dragX = 0;
+            dragging = false;
+            card.style.transition = "none";
+            card.setPointerCapture?.(event.pointerId);
+          });
+
+          card.addEventListener("pointermove", event => {
+            if (event.pointerId !== pointerId) return;
+            const movement = event.clientX - startX;
+            if (!dragging && Math.abs(movement) < 7) return;
+            if (movement > 0 && !dragging) return;
+            dragging = true;
+            swipeRow.classList.add("is-swiping");
+            dragX = Math.max(-card.offsetWidth, Math.min(0, movement));
+            card.style.transform = `translateX(${dragX}px)`;
+          });
+
+          card.addEventListener("pointerup", event => {
+            if (event.pointerId === pointerId) finishSwipe(false);
+          });
+          card.addEventListener("pointercancel", event => {
+            if (event.pointerId === pointerId) finishSwipe(true);
+          });
         });
 
         requestAnimationFrame(syncSidebarHeight);

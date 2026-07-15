@@ -26,7 +26,7 @@
   const watchNow = document.getElementById("exploreWatchNow");
 
   if (!button || !view || !appGrid) return;
-  searchInput.title = "Use ! to include explicit content, or !!! to show explicit content only.";
+  searchInput.title = "Search catalogue titles.";
 
   const TMDB_TOKEN = window.MEMETV_CONFIG?.tmdbReadToken || "";
   const TMDB_IMAGE = "https://image.tmdb.org/t/p/w342";
@@ -63,7 +63,7 @@
   }
 
   function setGenres() {
-    region.options[0].textContent = media.value === "anime" ? "All origins" : "All regions";
+    region.options[0].textContent = "All countries";
     searchInput.placeholder = media.value === "anime"
       ? "Search anime titles…"
       : media.value === "tv"
@@ -81,6 +81,39 @@
       }
       genre.appendChild(option);
     }
+
+    const sortOptions = media.value === "anime"
+      ? [["trending", "Trending"], ["popular", "Popularity"], ["newest", "Newest"], ["oldest", "Oldest"]]
+      : [["trending", "Trending"]];
+    sort.innerHTML = "";
+    for (const [value, label] of sortOptions) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      sort.appendChild(option);
+    }
+    sort.value = "trending";
+    sort.hidden = media.value !== "anime";
+    setStatusOptions(false);
+  }
+
+  function setStatusOptions(selectCurrent = false) {
+    const newest = sort.value === "newest";
+    const statuses = media.value === "anime"
+      ? [["all", "All Status"], ["airing", "Airing"], ["finished", "Finished"], ["coming", "Coming Soon"]]
+      : newest
+        ? [["current", "Current"], ["all", "All Status"], ["coming", "Coming Soon"]]
+        : [["all", "All Status"], ["coming", "Coming Soon"]];
+    releaseStatus.innerHTML = "";
+    for (const [value, label] of statuses) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      releaseStatus.appendChild(option);
+    }
+    releaseStatus.hidden = media.value !== "anime";
+    if (selectCurrent && newest && media.value !== "anime") releaseStatus.value = "current";
+    if (newest && media.value === "anime") releaseStatus.value = "airing";
   }
 
   function showExplore() {
@@ -109,16 +142,7 @@
   }
 
   function parsedSearch() {
-    const raw = searchInput.value.trim();
-    const adultOnly = raw.startsWith("!!!");
-    const includeExplicit = raw.startsWith("!");
-    const prefixLength = adultOnly ? 3 : includeExplicit ? 1 : 0;
-    const text = prefixLength ? raw.slice(prefixLength).trim() : raw;
-    return {
-      text,
-      includeExplicit,
-      adultOnly
-    };
+    return { text: searchInput.value.trim() };
   }
 
   function isoToday(offsetDays = 0) {
@@ -129,20 +153,20 @@
   }
 
   function releaseDateFor(item) {
-    return item.release_date || item.first_air_date || "";
+    return item.releaseDate || item.release_date || item.first_air_date || "";
   }
 
   function matchesReleaseStatus(item) {
     if (releaseStatus.value === "all") return true;
     const date = releaseDateFor(item);
     if (!date) return false;
-    return releaseStatus.value === "unreleased" ? date > isoToday() : date <= isoToday();
+    return releaseStatus.value === "coming" ? date > isoToday() : date <= isoToday();
   }
 
   function tvEpisodeProgress(details) {
     const latest = details?.last_episode_to_air;
     const total = Number(details?.number_of_episodes || 0);
-    if (!latest) return { episodesOut: 0, totalEpisodes: total, latestLabel: "" };
+    if (!latest) return { episodesOut: 0, totalEpisodes: total, latestLabel: "", tmdbStatus: details?.status || "" };
 
     const currentSeason = Number(latest.season_number || 1);
     const previousEpisodes = (details.seasons || [])
@@ -152,7 +176,8 @@
     return {
       episodesOut: previousEpisodes + Number(latest.episode_number || 0),
       totalEpisodes: total,
-      latestLabel: `S${currentSeason} E${Number(latest.episode_number || 1)}`
+      latestLabel: `S${currentSeason} E${Number(latest.episode_number || 1)}`,
+      tmdbStatus: details?.status || ""
     };
   }
 
@@ -166,7 +191,8 @@
           headers: { Authorization: `Bearer ${TMDB_TOKEN}`, Accept: "application/json" }
         });
         if (!response.ok) return item;
-        return Object.assign(item, tvEpisodeProgress(await response.json()));
+        const details = await response.json();
+        return Object.assign(item, tvEpisodeProgress(details), { releaseDate: details.first_air_date || item.releaseDate || "" });
       }));
       enriched.push(...settled.map((result, index) => result.status === "fulfilled" ? result.value : batch[index]));
     }
@@ -180,13 +206,12 @@
     const search = parsedSearch();
     const searchText = search.text;
     const matched = [];
-    let scans = 0;
 
     do {
       const params = new URLSearchParams({
         language: "en-US",
         page: String(scanPage),
-        include_adult: String(search.includeExplicit)
+        include_adult: "false"
       });
       let endpoint = `discover/${media.value}`;
       if (searchText) {
@@ -194,14 +219,9 @@
         params.set("query", searchText);
       } else {
         const dateField = media.value === "movie" ? "primary_release_date" : "first_air_date";
-        // TMDB has no adult-only discover filter. Its popularity ordering can
-        // bury every adult result hundreds of pages deep, while date ordering
-        // exposes candidates consistently. Reorder the retained matches below.
-        params.set("sort_by", search.adultOnly
-          ? `${dateField}.${sort.value === "oldest" ? "asc" : "desc"}`
-          : tmdbSort());
-        if (releaseStatus.value === "released") params.set(`${dateField}.lte`, isoToday());
-        if (releaseStatus.value === "unreleased") params.set(`${dateField}.gte`, isoToday(1));
+        params.set("sort_by", tmdbSort());
+        if (["current", "released", "airing", "finished"].includes(releaseStatus.value)) params.set(`${dateField}.lte`, isoToday());
+        if (releaseStatus.value === "coming") params.set(`${dateField}.gte`, isoToday(1));
         if (region.value) params.set("with_origin_country", region.value);
         if (year.value) params.set(media.value === "movie" ? "primary_release_year" : "first_air_date_year", year.value);
         if (genre.value) params.set("with_genres", genre.value);
@@ -220,21 +240,9 @@
         if (year.value) results = results.filter(item => String(item.release_date || item.first_air_date || "").startsWith(year.value));
         if (genre.value) results = results.filter(item => (item.genre_ids || []).includes(Number(genre.value)));
       }
-      if (search.adultOnly) results = results.filter(item => item.adult === true);
       matched.push(...results);
       scanPage += 1;
-      scans += 1;
-    } while (search.adultOnly && matched.length < 20 && scanPage <= totalPages && scans < 25);
-
-    if (search.adultOnly && !searchText) {
-      matched.sort((a, b) => {
-        const aDate = releaseDateFor(a);
-        const bDate = releaseDateFor(b);
-        if (sort.value === "oldest") return aDate.localeCompare(bDate);
-        if (sort.value === "newest") return bDate.localeCompare(aDate);
-        return Number(b.popularity || 0) - Number(a.popularity || 0);
-      });
-    }
+    } while (false);
 
     const items = matched.map(item => ({
       id: item.id,
@@ -244,13 +252,27 @@
       poster: item.poster_path ? `${TMDB_IMAGE}${item.poster_path}` : "",
       backdrop: item.backdrop_path ? `${TMDB_BACKDROP}${item.backdrop_path}` : "",
       year: String(item.release_date || item.first_air_date || "").slice(0, 4),
+      releaseDate: item.release_date || item.first_air_date || "",
       score: Number(item.vote_average || 0)
     }));
+
+    let filteredItems = await enrichTvItems(items);
+    if (media.value === "movie") filteredItems = filteredItems.filter(matchesReleaseStatus);
+    if (media.value === "tv" && releaseStatus.value !== "all") {
+      filteredItems = filteredItems.filter(item => {
+        if (releaseStatus.value === "coming") return item.releaseDate > isoToday();
+        if (releaseStatus.value === "current") {
+          return item.releaseDate && item.releaseDate <= isoToday() && Number(item.episodesOut || 0) > 0;
+        }
+        if (releaseStatus.value === "finished") return item.tmdbStatus === "Ended";
+        return item.releaseDate <= isoToday() && ["Returning Series", "In Production"].includes(item.tmdbStatus);
+      });
+    }
 
     return {
       hasMore: scanPage <= totalPages,
       nextPage: scanPage,
-      items: await enrichTvItems(items)
+      items: filteredItems
     };
   }
 
@@ -278,17 +300,14 @@
     // AniList rejects comparisons against null (for example,
     // averageScore_greater: null). Build only the filters the user selected.
     const search = parsedSearch();
-    const definitions = ["$page: Int", "$perPage: Int", "$sort: [MediaSort]", "$adult: Boolean"];
-    const argumentsList = ["type: ANIME", "sort: $sort", "isAdult: $adult"];
-    const variables = { page, perPage: search.includeExplicit && !search.adultOnly ? 10 : 20, sort: [animeSort()] };
+    const definitions = ["$page: Int", "$perPage: Int", "$sort: [MediaSort]"];
+    const argumentsList = ["type: ANIME", "sort: $sort", "isAdult: false"];
+    const variables = { page, perPage: 20, sort: [animeSort()] };
 
-    if (releaseStatus.value === "released") {
-      definitions.push("$before: FuzzyDateInt");
-      argumentsList.push("startDate_lesser: $before", "status_in: [RELEASING, FINISHED, HIATUS]");
-      variables.before = Number(isoToday(1).replaceAll("-", ""));
-    } else if (releaseStatus.value === "unreleased") {
-      argumentsList.push("status: NOT_YET_RELEASED");
-    }
+    if (releaseStatus.value === "airing") argumentsList.push("status: RELEASING");
+    else if (releaseStatus.value === "finished") argumentsList.push("status: FINISHED");
+    else if (releaseStatus.value === "coming") argumentsList.push("status: NOT_YET_RELEASED");
+    else argumentsList.push("status_not: CANCELLED");
 
     if (search.text) {
       definitions.push("$search: String");
@@ -326,23 +345,14 @@
           }
         }
       }`;
-    async function requestAdultGroup(adult) {
-      const response = await fetch("https://graphql.anilist.co", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ query, variables: { ...variables, adult } })
-      });
-      if (!response.ok) throw new Error("AniList catalogue request failed.");
-      return response.json();
-    }
-
-    const adultGroups = search.includeExplicit && !search.adultOnly
-      ? await Promise.all([requestAdultGroup(false), requestAdultGroup(true)])
-      : [await requestAdultGroup(search.adultOnly)];
-    const mediaGroups = adultGroups.map(data => data?.data?.Page?.media || []);
-    const combinedMedia = mediaGroups.length === 2
-      ? mediaGroups[0].flatMap((item, index) => [item, mediaGroups[1][index]].filter(Boolean))
-      : mediaGroups[0];
+    const response = await fetch("https://graphql.anilist.co", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ query, variables })
+    });
+    if (!response.ok) throw new Error("AniList catalogue request failed.");
+    const data = await response.json();
+    const combinedMedia = data?.data?.Page?.media || [];
 
     let items = combinedMedia.map(item => ({
       id: item.id,
@@ -358,10 +368,12 @@
       status: item.status,
       format: item.format
     }));
-    if (releaseStatus.value === "released") items = items.filter(item => item.episodesOut > 0);
+    if (releaseStatus.value === "airing" || releaseStatus.value === "finished") {
+      items = items.filter(item => item.episodesOut > 0);
+    }
 
     return {
-      hasMore: adultGroups.some(data => Boolean(data?.data?.Page?.pageInfo?.hasNextPage)),
+      hasMore: Boolean(data?.data?.Page?.pageInfo?.hasNextPage),
       items
     };
   }
@@ -462,13 +474,7 @@
     scroll.scrollTop = 0;
     cue.classList.remove("is-hidden");
     const search = parsedSearch();
-    count.textContent = search.text
-      ? "Search results"
-      : search.adultOnly
-        ? "Explicit content only"
-        : search.includeExplicit
-          ? "Explicit content enabled"
-        : "Popular picks";
+    count.textContent = search.text ? "Search results" : "Popular picks";
     loadMore();
   }
 
@@ -480,7 +486,11 @@
   }));
 
   media.addEventListener("change", () => { setGenres(); resetCatalogue(); });
-  [region, year, releaseStatus, genre, sort].forEach(control => control.addEventListener("change", resetCatalogue));
+  [region, year, releaseStatus, genre].forEach(control => control.addEventListener("change", resetCatalogue));
+  sort.addEventListener("change", () => {
+    setStatusOptions(true);
+    resetCatalogue();
+  });
   searchInput.addEventListener("input", () => {
     searchClear.hidden = !searchInput.value;
     clearTimeout(searchTimer);
