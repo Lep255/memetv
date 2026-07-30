@@ -189,13 +189,3 @@ vidfast.vc##iframe[src*=".rest"]
 ##[class*="ads"]
 ##[id*="ads"]
 
-||flagsapi.com^
-||hetteheran.shop^
-||image.tmdb.org^
-||lexical.swabsanglersloculus.qpon^
-||moon.ironwallnet.net^
-||offer.alibaba.com^
-||poromacrusted.shop^
-||webls.net^
-||wsrv.nl^
-||www.gstatic.com^
