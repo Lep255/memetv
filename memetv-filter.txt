@@ -1,5 +1,19 @@
 [Adblock Plus 2.0]
+! Title: MemeTV Mobile Focused
+! Description: MemeTV player-safe ad and tracker blocking for mobile content blockers.
+! Last modified: 2026-08-15T15:16:19.033Z
+! Expires: 1 day
+! Homepage: https://github.com/Lep255/memetv
+! License: Each embedded section remains subject to its original upstream license.
+! Compatibility: AdGuard, uBlock Origin, and other Adblock Plus-syntax blockers.
+! DNS-only blockers cannot use this file.
+! Source: MemeTV custom filter — https://raw.githubusercontent.com/Lep255/memetv/refs/heads/main/memetv-filter.txt
 
+! -----------------------------------------------------------------------------
+! BEGIN: MemeTV custom filter
+! Source URL: https://raw.githubusercontent.com/Lep255/memetv/refs/heads/main/memetv-filter.txt
+! Homepage: https://github.com/Lep255/memetv
+! -----------------------------------------------------------------------------
 ! ============================================================
 ! MemeTV Official Filter List
 ! Updated: 2026-07-11
@@ -188,4 +202,33 @@ vidfast.vc##iframe[src*=".rest"]
 
 ##[class*="ads"]
 ##[id*="ads"]
+! END: MemeTV custom filter
+
+! -----------------------------------------------------------------------------
+! BEGIN: MemeTV player-safe overrides
+! Source URL: bundled with MemeTV Lite
+! Homepage: https://github.com/Lep255/memetv
+! -----------------------------------------------------------------------------
+! MemeTV Lite player-safe overrides. These are intentionally network-only.
+@@||memetv.app^$important
+@@||vidcore.net^$important
+@@||vidcore.io^$important
+@@||vidfast.vc^$important
+@@||vidnest.fun^$important
+@@||tripplestream.online^$media,xhr,important
+@@||image.tmdb.org^$image,important
+@@||wsrv.nl^$image,important
+@@||gstatic.com/cast/^$script,important
+@@||gstatic.com/eureka/^$script,important
+
+! Rotating popunder loaders seen inside the original player providers.
+! Only JavaScript and nested ad frames are blocked; media/XHR are untouched.
+/^https?:\/\/[^/]+\.(?:cfd|cyou|qpon|rest)\/.*$/$script,third-party,domain=vidfast.vc|vidnest.fun|vidcore.net|vidcore.io,important
+/^https?:\/\/[^/]+\.(?:cfd|cyou|qpon|rest)\/.*$/$subdocument,third-party,domain=vidfast.vc|vidnest.fun|vidcore.net|vidcore.io,important
+||googletagmanager.com^$important
+||google-analytics.com^$important
+||static.cloudflareinsights.com^$important
+||umami.vidcore.net^$important
+||umami.vidfast.vc^$important
+! END: MemeTV player-safe overrides
 
